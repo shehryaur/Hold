@@ -46,7 +46,7 @@ from ui import dashboard  # noqa: E402
 
 DASHBOARD = REPO_ROOT / "ui" / "dashboard.py"
 LOCAL_LABEL = "LOCAL AUDIT LOG (not ClickHouse)"
-EVENT_FIELDS = {"ts", "tool_name", "sink", "target", "decision", "reason", "exec_status", "gate_us"}
+EVENT_FIELDS = {"ts", "agent_id", "tool_name", "sink", "target", "decision", "reason", "exec_status", "gate_us"}
 START_TIMEOUT = 30
 
 
@@ -167,6 +167,7 @@ class JsonlModeProcess(unittest.TestCase):
         rows = [line for line in self.lines if line["task_id"] == task]
         return [{
             "ts": datetime.fromisoformat(r["ts"]).astimezone(timezone.utc).isoformat(),
+            "agent_id": r["agent_id"],
             "tool_name": r["tool_name"], "sink": r["sink"], "target": r["target"],
             "decision": r["decision"], "reason": r["reason"], "exec_status": r["exec_status"],
             "gate_us": round(r["gate_latency_ns"] / 1000, 1),

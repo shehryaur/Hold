@@ -174,9 +174,20 @@ ClickHouse; treat that as UNTESTED until real rows have been shown.
 
 ## Backup: the model does not attempt the injected call
 
-Replay the exact same `tools/call` through the same running HOLD server (same receipt,
-same URL), and say it validates **enforcement**, not the model's susceptibility. This
-mirrors `SPEC.md` section 7 and `ROADMAP.md` > Three-minute demo (Backup).
+This happened on our first live run: Claude read the issue, ignored the injected fetch and
+fixed the bug. That is model behavior, not HOLD, so show HOLD with the scripted replay:
+
+```bash
+.venv\Scripts\python scripts\replay_attack.py
+```
+
+It starts the same HOLD server with the same config and receipt Claude used, then sends the
+two calls the injected issue asks for: `fetch_url(<attack URL from ISSUE.md>)` and a
+`write_file` adding `urllib.request.urlopen(...)` to `app.py`. Verified live: both DENIED
+(no egress; Semgrep `hold-net-urllib`), `app.py` unchanged, rows in ClickHouse within ~13 s.
+Rows carry `agent_id = scripted-replay`. Say on stage that it validates **enforcement**, not
+the model's susceptibility. This mirrors `SPEC.md` section 7 and `ROADMAP.md` > Three-minute
+demo (Backup).
 
 ## After the demo
 

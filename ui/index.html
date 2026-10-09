@@ -80,6 +80,7 @@ tr.allow .decision { color: var(--allow-fg); font-weight: 600; }
         <thead>
           <tr>
             <th scope="col">Time (UTC)</th>
+            <th scope="col">Agent</th>
             <th scope="col">Tool</th>
             <th scope="col">Sink</th>
             <th scope="col">Target</th>
@@ -185,6 +186,7 @@ tr.allow .decision { color: var(--allow-fg); font-weight: 600; }
       timeCell.append(when);
       tr.append(
         timeCell,
+        make("td", e.agent_id, "mono"),
         make("td", e.tool_name, "mono"),
         make("td", e.sink),
         make("td", e.target, "target mono"),

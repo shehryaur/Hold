@@ -125,6 +125,7 @@ class JsonlSource:
                                 "seq": len(events),
                                 "task_id": str(raw["task_id"]),
                                 "ts": ts if ts.tzinfo else ts.replace(tzinfo=timezone.utc),
+                                "agent_id": str(raw["agent_id"]),
                                 "tool_name": str(raw["tool_name"]),
                                 "sink": str(raw["sink"]),
                                 "target": str(raw["target"]),
@@ -147,7 +148,7 @@ class JsonlSource:
         rows, warning = self._for_task(task)
         rows.sort(key=lambda e: (e["ts"], e["seq"]), reverse=True)
         return [{
-            "ts": iso_utc(e["ts"]), "tool_name": e["tool_name"], "sink": e["sink"],
+            "ts": iso_utc(e["ts"]), "agent_id": e["agent_id"], "tool_name": e["tool_name"], "sink": e["sink"],
             "target": e["target"], "decision": e["decision"], "reason": e["reason"],
             "exec_status": e["exec_status"], "gate_us": round(e["gate_latency_ns"] / 1000, 1),
         } for e in rows[:limit]], warning
@@ -226,7 +227,7 @@ class ClickHouseSource:
     def events(self, task: str, limit: int) -> Tuple[List[Dict[str, Any]], Optional[str]]:
         rows = self._query(tch.LIVE_FEED_SQL, {"task": task})[:limit]
         return [{
-            "ts": iso_utc(r["ts"]), "tool_name": str(r["tool_name"]), "sink": str(r["sink"]),
+            "ts": iso_utc(r["ts"]), "agent_id": str(r["agent_id"]), "tool_name": str(r["tool_name"]), "sink": str(r["sink"]),
             "target": str(r["target"]), "decision": str(r["decision"]), "reason": str(r["reason"]),
             "exec_status": str(r["exec_status"]), "gate_us": float(r["gate_us"]),
         } for r in rows], None

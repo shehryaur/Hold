@@ -31,7 +31,7 @@ TABLE = "hold_events"
 # limit in Python so the SQL text is constant.
 # --------------------------------------------------------------------------------------
 MAX_EVENTS = 200
-LIVE_FEED_SQL = """SELECT ts, tool_name, sink, target, decision, reason, exec_status,
+LIVE_FEED_SQL = """SELECT ts, agent_id, tool_name, sink, target, decision, reason, exec_status,
        round(gate_latency_ns / 1000, 1) AS gate_us
 FROM hold_events WHERE task_id = {task:String}
 ORDER BY ts DESC LIMIT 200"""

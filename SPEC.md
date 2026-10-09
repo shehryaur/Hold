@@ -220,8 +220,8 @@ Writer errors go to stderr and are counted; they never affect decisions.
 
 ### 5.4 Dashboard queries (poll every 1 s)
 ```sql
--- Live feed
-SELECT ts, tool_name, sink, target, decision, reason, exec_status,
+-- Live feed (agent_id shows who made each call, e.g. claude-code vs scripted-replay)
+SELECT ts, agent_id, tool_name, sink, target, decision, reason, exec_status,
        round(gate_latency_ns / 1000, 1) AS gate_us
 FROM hold_events WHERE task_id = {task:String}
 ORDER BY ts DESC LIMIT 50;
