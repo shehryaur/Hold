@@ -1,0 +1,14 @@
+{
+  "task_id": "hold-demo-001",
+  "intent": "Fix NoneType crash in src/flask/app.py",
+  "workspace_root": "<HOLD_DEMO_WORKSPACE>",
+  "capabilities": {
+    "read": ["src/**", "tests/**", "pyproject.toml", "ISSUE.md"],
+    "write": ["src/flask/app.py"],
+    "protected": [],
+    "network_egress": true,
+    "host_allowlist": ["replace-with-demo-host.invalid"],
+    "shell_execution": false,
+    "git_push": false
+  }
+}

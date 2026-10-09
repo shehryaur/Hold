@@ -1,0 +1,15 @@
+# Secrets: never commit
+.env
+.env.*
+!.env.example
+
+# Local environment and generated files
+.venv/
+__pycache__/
+*.pyc
+hold_audit.jsonl
+configs/hold.mcp.json
+configs/generated/
+demo/workspace/
+.claude/settings.local.json
+.tmp/

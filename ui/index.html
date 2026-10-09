@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>HOLD decisions</title>
+<style>
+:root {
+  --bg: #ffffff; --fg: #1b1b1b; --muted: #595959; --line: #d0d0d0; --panel: #f3f3f3;
+  --deny-bg: #fbe3e3; --deny-fg: #8b0d0d; --deny-edge: #c62828; --allow-fg: #0b5a1f;
+  --local-bg: #fff0bf; --local-fg: #4d3900; --ch-bg: #e2efff; --ch-fg: #0b3d75; --err-fg: #8b0d0d;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #121212; --fg: #ececec; --muted: #a8a8a8; --line: #3a3a3a; --panel: #1e1e1e;
+    --deny-bg: #3b1515; --deny-fg: #ffb3b3; --deny-edge: #ef5350; --allow-fg: #8fdca3;
+    --local-bg: #3d3209; --local-fg: #ffe08a; --ch-bg: #10263f; --ch-fg: #a9d1ff; --err-fg: #ffb3b3;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; padding: 16px; background: var(--bg); color: var(--fg);
+       font: 15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+h1 { font-size: 1.4rem; margin: 0 0 8px; }
+h2 { font-size: 1.05rem; margin: 20px 0 8px; }
+.source { display: inline-block; margin: 0 0 12px; padding: 6px 10px; border-radius: 4px;
+          font-weight: 700; background: var(--panel); }
+.source.local { background: var(--local-bg); color: var(--local-fg); }
+.source.clickhouse { background: var(--ch-bg); color: var(--ch-fg); }
+form { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 0 0 6px; }
+input { font: inherit; padding: 4px 6px; min-width: 18ch; color: var(--fg); background: var(--bg);
+        border: 1px solid var(--line); border-radius: 3px; }
+button { font: inherit; padding: 4px 12px; }
+#status { margin: 4px 0 0; }
+#status.error { color: var(--err-fg); font-weight: 700; }
+#updated { margin: 2px 0 0; color: var(--muted); font-size: 0.85rem; }
+.cards { display: flex; flex-wrap: wrap; gap: 12px; }
+.card { min-width: 170px; padding: 10px 14px; border: 1px solid var(--line); border-radius: 6px;
+        background: var(--panel); }
+.card.deny { border-left: 6px solid var(--deny-edge); }
+.card h3 { margin: 0 0 4px; font-size: 1rem; }
+.card p { margin: 0; font-variant-numeric: tabular-nums; }
+.table-wrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 0.92rem; }
+caption { text-align: left; color: var(--muted); padding: 0 0 6px; }
+th, td { text-align: left; padding: 5px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { background: var(--bg); }
+.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.mono { font-family: ui-monospace, Consolas, "Cascadia Mono", monospace; }
+.target, .reason { overflow-wrap: anywhere; }
+tr.deny td { background: var(--deny-bg); }
+tr.deny td:first-child { box-shadow: inset 6px 0 0 var(--deny-edge); }
+tr.deny .decision { color: var(--deny-fg); font-weight: 700; }
+tr.allow .decision { color: var(--allow-fg); font-weight: 600; }
+.note { color: var(--muted); font-size: 0.85rem; margin-top: 16px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>HOLD decisions</h1>
+  <p id="source" class="source">Data source: loading</p>
+  <form id="task-form" autocomplete="off">
+    <label for="task">Task ID</label>
+    <input id="task" name="task" maxlength="200" spellcheck="false">
+    <button type="submit">Show task</button>
+  </form>
+  <p id="status" role="status">Loading</p>
+  <p id="updated"></p>
+</header>
+<main>
+  <section aria-labelledby="summary-title">
+    <h2 id="summary-title">Decisions and gate latency for this task</h2>
+    <div id="cards" class="cards"></div>
+  </section>
+  <section aria-labelledby="events-title">
+    <h2 id="events-title">Latest tool calls</h2>
+    <div class="table-wrap">
+      <table>
+        <caption>Up to 50 most recent decisions, newest first. DENY rows are shaded and marked DENY.</caption>
+        <thead>
+          <tr>
+            <th scope="col">Time (UTC)</th>
+            <th scope="col">Tool</th>
+            <th scope="col">Sink</th>
+            <th scope="col">Target</th>
+            <th scope="col">Decision</th>
+            <th scope="col">Reason</th>
+            <th scope="col">Exec status</th>
+            <th scope="col" class="num">Gate &micro;s</th>
+          </tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+  </section>
+  <p class="note">Gate &micro;s is the time HOLD's gate took to decide, measured on the gateway machine.
+    It excludes tool execution, Semgrep scan time, MCP transport and model time.
+    p50 and p95 are over the calls of the task shown.</p>
+</main>
+<noscript><p>This page needs JavaScript to poll the dashboard API.</p></noscript>
+<script>
+"use strict";
+(() => {
+  const POLL_MS = 1000;
+  const LIMIT = 50;
+  const byId = (id) => document.getElementById(id);
+  const sourceEl = byId("source");
+  const statusEl = byId("status");
+  const updatedEl = byId("updated");
+  const cardsEl = byId("cards");
+  const rowsEl = byId("rows");
+  const taskInput = byId("task");
+  let task = new URLSearchParams(window.location.search).get("task") || "";
+  let lastStatus = "";
+  let timer = 0;
+  let inFlight = false;
+  let again = false;
+
+  // Every value that comes from the API is written with textContent, never parsed as HTML.
+  function make(tag, text, className) {
+    const node = document.createElement(tag);
+    if (className) node.className = className;
+    if (text !== undefined && text !== null) node.textContent = String(text);
+    return node;
+  }
+
+  function setStatus(message, isError) {
+    if (message === lastStatus) return;  // do not re-announce the same state every second
+    lastStatus = message;
+    statusEl.textContent = message;
+    statusEl.className = isError ? "error" : "";
+  }
+
+  function setSource(payload) {
+    if (!payload || typeof payload.source_label !== "string") return;
+    sourceEl.textContent = "Data source: " + payload.source_label;
+    sourceEl.className = "source " + (payload.source === "jsonl" ? "local" : "clickhouse");
+  }
+
+  function fmtUs(value) {
+    return typeof value === "number" && isFinite(value) ? value.toFixed(1) : "-";
+  }
+
+  function fmtTime(iso) {
+    const d = new Date(iso);
+    return isNaN(d.getTime()) ? String(iso) : d.toISOString().slice(11, 23);
+  }
+
+  function card(title, lines, className) {
+    const box = make("div", null, "card" + (className ? " " + className : ""));
+    box.append(make("h3", title));
+    for (const line of lines) box.append(make("p", line));
+    return box;
+  }
+
+  function messageRow(text) {
+    const tr = make("tr");
+    const td = make("td", text);
+    td.colSpan = 8;
+    tr.append(td);
+    return tr;
+  }
+
+  function renderSummary(rows) {
+    let total = 0;
+    for (const r of rows) total += Number(r.calls) || 0;
+    const cards = [card("All calls", [total + " calls"], "")];
+    for (const r of rows) {
+      cards.push(card(r.decision, [
+        r.calls + " calls",
+        "p50 " + fmtUs(r.p50_us) + " µs",
+        "p95 " + fmtUs(r.p95_us) + " µs",
+      ], r.decision === "DENY" ? "deny" : ""));
+    }
+    cardsEl.replaceChildren(...cards);
+  }
+
+  function renderEvents(events) {
+    const rows = [];
+    for (const e of events) {
+      const tr = make("tr", null, e.decision === "DENY" ? "deny" : "allow");
+      const when = make("time", fmtTime(e.ts));
+      when.setAttribute("datetime", String(e.ts));
+      const timeCell = make("td");
+      timeCell.append(when);
+      tr.append(
+        timeCell,
+        make("td", e.tool_name, "mono"),
+        make("td", e.sink),
+        make("td", e.target, "target mono"),
+        make("td", e.decision, "decision"),
+        make("td", e.reason, "reason"),
+        make("td", e.exec_status),
+        make("td", fmtUs(e.gate_us), "num"),
+      );
+      rows.push(tr);
+    }
+    if (!rows.length) rows.push(messageRow("No decisions recorded for this task yet."));
+    rowsEl.replaceChildren(...rows);
+  }
+
+  function clearData(reason) {
+    cardsEl.replaceChildren();
+    rowsEl.replaceChildren(messageRow("No data shown: " + reason));
+    updatedEl.textContent = "";
+  }
+
+  async function getJSON(path) {
+    const ctrl = new AbortController();
+    const t = window.setTimeout(() => ctrl.abort(), 4000);
+    try {
+      const res = await fetch(path, { cache: "no-store", signal: ctrl.signal });
+      let body = null;
+      try { body = await res.json(); } catch (_) { body = null; }
+      return { ok: res.ok, status: res.status, body: body || {} };
+    } finally {
+      window.clearTimeout(t);
+    }
+  }
+
+  function showFailure(res) {
+    setSource(res.body);
+    const what = res.body.source === "clickhouse" ? "ClickHouse unavailable" : "Data unavailable";
+    const why = res.body.error || res.body.detail || "no detail";
+    setStatus(what + " (HTTP " + res.status + "): " + why, true);
+    clearData(why);
+  }
+
+  async function poll() {
+    if (inFlight) { again = true; return; }
+    inFlight = true;
+    try {
+      if (!task) {
+        const health = await getJSON("/api/health");
+        setSource(health.body);
+        task = typeof health.body.default_task === "string" ? health.body.default_task : "";
+        taskInput.value = task;
+        if (!task) { setStatus("Enter a task ID.", false); return; }
+      }
+      const q = "task=" + encodeURIComponent(task);
+      const [events, summary] = await Promise.all([
+        getJSON("/api/events?" + q + "&limit=" + LIMIT),
+        getJSON("/api/summary?" + q),
+      ]);
+      if (!events.ok) { showFailure(events); return; }
+      if (!summary.ok) { showFailure(summary); return; }
+      setSource(events.body);
+      renderSummary(Array.isArray(summary.body.summary) ? summary.body.summary : []);
+      const list = Array.isArray(events.body.events) ? events.body.events : [];
+      renderEvents(list);
+      setStatus("Live: polling every second" + (events.body.warning ? ". " + events.body.warning : ""), false);
+      updatedEl.textContent = "Last update " + new Date().toISOString().slice(11, 19) + " UTC, "
+        + list.length + " rows, task " + task;
+    } catch (err) {
+      setStatus("Dashboard server did not answer: " + (err && err.message ? err.message : String(err)), true);
+      clearData("the dashboard server did not answer.");
+    } finally {
+      inFlight = false;
+      window.clearTimeout(timer);
+      timer = window.setTimeout(poll, again ? 0 : POLL_MS);
+      again = false;
+    }
+  }
+
+  byId("task-form").addEventListener("submit", (event) => {
+    event.preventDefault();
+    task = taskInput.value.trim();
+    const url = new URL(window.location.href);
+    if (task) url.searchParams.set("task", task); else url.searchParams.delete("task");
+    window.history.replaceState(null, "", url);
+    poll();
+  });
+
+  taskInput.value = task;
+  poll();
+})();
+</script>
+</body>
+</html>

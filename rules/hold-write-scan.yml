@@ -1,0 +1,234 @@
+# HOLD write-content scan (Python). Used by hold/scan.py on every write_file the gate allows.
+#
+# HOLD runs these rules on the file's current content AND on the proposed content, and
+# denies the write only if the proposed content has a finding (rule id + matched source
+# text) that the current content does not. Pre-existing code therefore never blocks a fix.
+#
+# Scope: Python only. This catches new direct uses of network, process and dynamic-code
+# APIs, including import aliases that Semgrep resolves. It does not prove code is safe:
+# see SPEC.md §4.1 Write content scan for the known evasions.
+#
+# hold/scan.py runs Semgrep with --disable-nosem: inline `# nosemgrep` comments in the
+# scanned (agent-written) content do not suppress these rules.
+#
+# Keep rule ids free of dots (hold/scan.py strips Semgrep's config-path prefix at the last
+# dot) and messages short and literal (they appear in the agent-visible reason and in
+# telemetry). Never interpolate metavariables ($X) into a message: telemetry must not
+# contain written content.
+
+rules:
+  # ---------------------------------------------------------------- network egress
+  - id: hold-net-urllib
+    languages: [python]
+    severity: ERROR
+    message: new network egress (urllib)
+    pattern-either:
+      - pattern: urllib.request.urlopen(...)
+      - pattern: urllib.request.urlretrieve(...)
+      - pattern: urllib.request.Request(...)
+      - pattern: urllib.request.build_opener(...)
+      - pattern: urllib.request.$F(...)
+
+  - id: hold-net-http-client
+    languages: [python]
+    severity: ERROR
+    message: new network egress (http.client)
+    pattern-either:
+      - pattern: http.client.HTTPConnection(...)
+      - pattern: http.client.HTTPSConnection(...)
+      - pattern: http.client.$F(...)
+
+  - id: hold-net-requests
+    languages: [python]
+    severity: ERROR
+    message: new network egress (requests)
+    pattern-either:
+      - pattern: requests.get(...)
+      - pattern: requests.post(...)
+      - pattern: requests.request(...)
+      - pattern: requests.Session(...)
+      - pattern: requests.$F(...)
+
+  - id: hold-net-httpx
+    languages: [python]
+    severity: ERROR
+    message: new network egress (httpx)
+    pattern-either:
+      - pattern: httpx.get(...)
+      - pattern: httpx.post(...)
+      - pattern: httpx.Client(...)
+      - pattern: httpx.AsyncClient(...)
+      - pattern: httpx.$F(...)
+
+  - id: hold-net-socket
+    languages: [python]
+    severity: ERROR
+    message: new network egress (socket)
+    pattern-either:
+      - pattern: socket.socket(...)
+      - pattern: socket.create_connection(...)
+      - pattern: socket.getaddrinfo(...)
+      - pattern: socket.gethostbyname(...)
+      - pattern: socket.$F(...)
+
+  - id: hold-net-aiohttp
+    languages: [python]
+    severity: ERROR
+    message: new network egress (aiohttp)
+    pattern-either:
+      - pattern: aiohttp.ClientSession(...)
+      - pattern: aiohttp.request(...)
+      - pattern: aiohttp.$F(...)
+
+  - id: hold-net-other
+    languages: [python]
+    severity: ERROR
+    message: new network egress
+    pattern-either:
+      - pattern: urllib3.$F(...)
+      - pattern: ftplib.$F(...)
+      - pattern: smtplib.$F(...)
+      - pattern: xmlrpc.client.$F(...)
+      - pattern: asyncio.open_connection(...)
+      - pattern: websockets.connect(...)
+      - pattern: pycurl.Curl(...)
+
+  # ---------------------------------------------------------------- process execution
+  - id: hold-exec-subprocess
+    languages: [python]
+    severity: ERROR
+    message: new process execution (subprocess)
+    pattern-either:
+      - pattern: subprocess.run(...)
+      - pattern: subprocess.Popen(...)
+      - pattern: subprocess.call(...)
+      - pattern: subprocess.check_output(...)
+      - pattern: subprocess.$F(...)
+
+  - id: hold-exec-os
+    languages: [python]
+    severity: ERROR
+    message: new process execution (os)
+    pattern-either:
+      - pattern: os.system(...)
+      - pattern: os.popen(...)
+      - pattern: os.startfile(...)
+      - patterns:
+          - pattern: os.$F(...)
+          - metavariable-regex:
+              metavariable: $F
+              regex: ^(system|popen|startfile|fork|forkpty|exec[a-z]*|spawn[a-z]*|posix_spawnp?)$
+
+  - id: hold-exec-other
+    languages: [python]
+    severity: ERROR
+    message: new process or native code execution
+    pattern-either:
+      - pattern: pty.spawn(...)
+      - pattern: asyncio.create_subprocess_exec(...)
+      - pattern: asyncio.create_subprocess_shell(...)
+      - pattern: ctypes.CDLL(...)
+      - pattern: ctypes.WinDLL(...)
+      - pattern: ctypes.cdll.LoadLibrary(...)
+
+  # ---------------------------------------------------------------- dynamic code
+  - id: hold-code-eval
+    languages: [python]
+    severity: ERROR
+    message: new dynamic code execution
+    pattern-either:
+      - pattern: eval(...)
+      - pattern: exec(...)
+      - pattern: compile(...)
+      - pattern: builtins.eval(...)
+      - pattern: builtins.exec(...)
+      - pattern: builtins.compile(...)
+      - pattern: runpy.$F(...)
+      - pattern: marshal.loads(...)
+      - pattern: marshal.load(...)
+      - pattern: pickle.loads(...)
+      - pattern: pickle.load(...)
+      - pattern: pickle.Unpickler(...)
+      - pattern: types.FunctionType(...)
+      - pattern: types.CodeType(...)
+
+  - id: hold-code-import
+    languages: [python]
+    severity: ERROR
+    message: new dynamic import
+    pattern-either:
+      - pattern: __import__(...)
+      - pattern: builtins.__import__(...)
+      - pattern: importlib.import_module(...)
+      - pattern: importlib.__import__(...)
+      - pattern: importlib.util.$F(...)
+      - pattern: importlib.machinery.$F(...)
+
+  - id: hold-code-reflection
+    languages: [python]
+    severity: ERROR
+    message: new reflective access to builtins or sensitive modules
+    pattern-either:
+      - pattern: getattr(__builtins__, ...)
+      - pattern: getattr(builtins, ...)
+      - pattern: getattr(os, ...)
+      - pattern: getattr(subprocess, ...)
+      - pattern: getattr(socket, ...)
+      - pattern: getattr(importlib, ...)
+      - pattern: getattr(urllib.request, ...)
+      - pattern: getattr(http.client, ...)
+      - pattern: getattr(requests, ...)
+      - pattern: globals()[$K]
+      - pattern: vars(...)[$K]
+      - pattern: __builtins__[$K]
+      - pattern: __builtins__.__dict__[$K]
+      - pattern: sys.modules[$K]
+      - pattern: sys.modules.get(...)
+
+  - id: hold-code-dynamic-attr
+    languages: [python]
+    severity: ERROR
+    message: new getattr with a computed name on an imported module
+    patterns:
+      - pattern-either:
+          - pattern-inside: |
+              import $M
+              ...
+          - pattern-inside: |
+              import $X as $M
+              ...
+          - pattern-inside: |
+              from $P import $M
+              ...
+      - pattern: getattr($M, $A, ...)
+      - pattern-not: getattr($M, "...", ...)
+
+  - id: hold-code-unsafe-yaml
+    languages: [python]
+    severity: ERROR
+    message: new unsafe YAML load
+    patterns:
+      - pattern-either:
+          - pattern: yaml.load(...)
+          - pattern: yaml.load_all(...)
+          - pattern: yaml.unsafe_load(...)
+          - pattern: yaml.unsafe_load_all(...)
+      - pattern-not: yaml.$F($S, Loader=yaml.SafeLoader)
+      - pattern-not: yaml.$F($S, Loader=yaml.CSafeLoader)
+      - pattern-not: yaml.$F($S, yaml.SafeLoader)
+      - pattern-not: yaml.$F($S, yaml.CSafeLoader)
+
+  - id: hold-code-decoded-exec
+    languages: [python]
+    severity: ERROR
+    message: new decoded payload reaches eval/exec
+    mode: taint
+    pattern-sources:
+      - pattern: base64.$D(...)
+      - pattern: codecs.decode(...)
+      - pattern: zlib.decompress(...)
+      - pattern: bytes.fromhex(...)
+    pattern-sinks:
+      - pattern: eval(...)
+      - pattern: exec(...)
+      - pattern: compile(...)
