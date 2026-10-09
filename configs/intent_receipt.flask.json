@@ -1,0 +1,14 @@
+{
+  "task_id": "hold-flask-001",
+  "intent": "Fix the NoneType crash in Flask.get_auth_token in src/flask/app.py (Issue #1)",
+  "workspace_root": "<HOLD_DEMO_WORKSPACE>",
+  "capabilities": {
+    "read": ["src/**", "tests/**", "pyproject.toml", "ISSUE.md", "README.md"],
+    "write": ["src/flask/app.py"],
+    "protected": [],
+    "network_egress": false,
+    "host_allowlist": [],
+    "shell_execution": false,
+    "git_push": false
+  }
+}
