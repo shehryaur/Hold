@@ -44,6 +44,8 @@ from hold.env import load_env  # noqa: E402
 from telemetry import clickhouse as tch  # noqa: E402
 
 INDEX_PATH = UI_DIR / "index.html"
+LIVE_PATH = UI_DIR / "live.html"
+RECEIPT_PATH = REPO_ROOT / "configs" / "generated" / "intent_receipt.json"
 DEFAULT_PORT = 8765
 DEFAULT_TASK = "hold-demo-001"
 DEFAULT_LIMIT = 50
@@ -290,13 +292,37 @@ def parse_limit(query: Dict[str, List[str]]) -> int:
 
 
 class DashboardApp:
-    def __init__(self, source: Any, default_task: str = DEFAULT_TASK, index_path: Path = INDEX_PATH):
+    def __init__(self, source: Any, default_task: str = DEFAULT_TASK, index_path: Path = INDEX_PATH,
+                 receipt_path: Path = RECEIPT_PATH, live_path: Path = LIVE_PATH):
         self.source = source
         self.default_task = default_task
         self.index_path = index_path
+        self.receipt_path = receipt_path
+        self.live_path = live_path
+
+    def receipt(self) -> Tuple[int, Dict[str, Any]]:
+        """The rendered Intent Receipt for the live view's 'what this task may do' chips:
+        capabilities and a digest prefix only, never the workspace path."""
+        try:
+            data = json.loads(self.receipt_path.read_text(encoding="utf-8"))
+            caps = data["capabilities"]
+            payload = {
+                "task_id": str(data["task_id"]), "intent": str(data["intent"]),
+                "read": [str(p) for p in caps.get("read", [])],
+                "write": [str(p) for p in caps.get("write", [])],
+                "network_egress": bool(caps.get("network_egress", False)),
+                "host_allowlist": [str(h) for h in caps.get("host_allowlist", [])],
+            }
+        except (OSError, ValueError, KeyError, TypeError, AttributeError) as exc:
+            return 404, {"error": f"no rendered receipt ({type(exc).__name__}); run scripts/make_mcp_config.py"}
+        canonical = json.dumps(data, sort_keys=True, separators=(",", ":")).encode("utf-8")
+        payload["digest_prefix"] = hashlib.sha256(canonical).hexdigest()[:16]  # same digest as hold.core
+        return 200, payload
 
     def api(self, route: str, query: Dict[str, List[str]]) -> Tuple[int, Dict[str, Any]]:
         meta = self.source.meta()
+        if route == "/api/receipt":
+            return self.receipt()
         if route == "/api/health":
             status, payload = self.source.health()
             return status, {**payload, **meta, "default_task": self.default_task}
@@ -323,7 +349,7 @@ class DashboardApp:
 class DashboardHandler(BaseHTTPRequestHandler):
     server_version = "hold-dashboard"
     sys_version = ""
-    API_ROUTES = ("/api/events", "/api/summary", "/api/health")
+    API_ROUTES = ("/api/events", "/api/summary", "/api/health", "/api/receipt")
 
     def do_GET(self) -> None:  # noqa: N802 (http.server naming)
         app: DashboardApp = self.server.app  # type: ignore[attr-defined]
@@ -335,7 +361,10 @@ class DashboardHandler(BaseHTTPRequestHandler):
             return
         url = urlsplit(self.path)
         if url.path in ("/", "/index.html"):
-            self._send_index(app)
+            self._send_page(app.index_path)
+            return
+        if url.path in ("/live", "/live.html"):
+            self._send_page(app.live_path)
             return
         if url.path not in self.API_ROUTES:
             self._send_json(404, {"error": "not found"})
@@ -363,8 +392,8 @@ class DashboardHandler(BaseHTTPRequestHandler):
         self._headers(status, "application/json; charset=utf-8", len(body))
         self.wfile.write(body)
 
-    def _send_index(self, app: DashboardApp) -> None:
-        raw = app.index_path.read_bytes()
+    def _send_page(self, path: Path) -> None:
+        raw = path.read_bytes()
         csp = content_security_policy(raw.decode("utf-8"))
         self._headers(200, "text/html; charset=utf-8", len(raw),
                       {"Content-Security-Policy": csp, "X-Frame-Options": "DENY"})
@@ -376,10 +405,10 @@ class DashboardHandler(BaseHTTPRequestHandler):
 
 
 def make_server(source: Any, default_task: str = DEFAULT_TASK, port: int = DEFAULT_PORT,
-                verbose: bool = False) -> ThreadingHTTPServer:
+                verbose: bool = False, receipt_path: Path = RECEIPT_PATH) -> ThreadingHTTPServer:
     server = ThreadingHTTPServer(("127.0.0.1", port), DashboardHandler)
     server.daemon_threads = True
-    server.app = DashboardApp(source, default_task)  # type: ignore[attr-defined]
+    server.app = DashboardApp(source, default_task, receipt_path=receipt_path)  # type: ignore[attr-defined]
     server.verbose = verbose  # type: ignore[attr-defined]
     return server
 
@@ -390,6 +419,8 @@ def main(argv: Optional[List[str]] = None) -> int:
     parser.add_argument("--task", default=DEFAULT_TASK, help="task shown when the URL has no ?task=")
     parser.add_argument("--jsonl", metavar="PATH", type=Path,
                         help="read this local JSONL audit log instead of ClickHouse (labeled on the page)")
+    parser.add_argument("--receipt", type=Path, default=RECEIPT_PATH,
+                        help="rendered receipt shown on /live (default: configs/generated/intent_receipt.json)")
     parser.add_argument("--verbose", action="store_true", help="log every request to stderr")
     args = parser.parse_args(argv)
 
@@ -398,9 +429,9 @@ def main(argv: Optional[List[str]] = None) -> int:
     else:
         load_env()
         source = ClickHouseSource()
-    server = make_server(source, args.task, args.port, args.verbose)
+    server = make_server(source, args.task, args.port, args.verbose, args.receipt)
     print(f"HOLD dashboard listening on http://127.0.0.1:{server.server_address[1]}/ "
-          f"| source: {source.label}", flush=True)
+          f"(live view: /live) | source: {source.label}", flush=True)
     if source.problem:
         print(f"WARNING: {source.problem}", file=sys.stderr, flush=True)
     try:

@@ -1,0 +1,440 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HOLD live</title>
+<style>
+:root{--bg:#e8ecf2;--card:#fff;--soft:#f2f4f7;--green:#7fd1a5;--green-d:#3fae74;--green-soft:#e2f4e9;--blue:#9fb5ef;--blue-soft:#dfe6fa;--ink:#1c2027;--muted:#7b8494;--red:#e5484d;--line:#e6e9ef;--shadow:0 10px 30px rgba(28,36,52,.08);--r:24px}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.4 "Segoe UI",system-ui,-apple-system,sans-serif}
+.app{display:grid;grid-template-columns:72px 1fr;gap:18px;height:100vh;padding:18px}
+.side{background:var(--card);border-radius:var(--r);box-shadow:var(--shadow);display:flex;flex-direction:column;align-items:center;gap:10px;padding:16px 0;height:calc(100vh - 36px);position:sticky;top:18px}
+.logo{width:40px;height:40px;border-radius:14px;background:var(--ink);color:#fff;display:grid;place-items:center;font-weight:800;margin-bottom:8px}
+.ico{width:42px;height:42px;border-radius:14px;border:0;background:transparent;display:grid;place-items:center;cursor:pointer;color:var(--muted);transition:background .25s,color .25s,transform .2s}
+.ico:hover{background:var(--soft);color:var(--ink);transform:translateY(-1px)}
+.ico.on{background:var(--soft);color:var(--ink)}
+.ico svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.side .grow{flex:1}
+.main{display:grid;grid-template-rows:52px 1fr;gap:16px;min-height:0}
+.top{display:flex;align-items:center;gap:14px}
+.brand{font-weight:700;font-size:18px}.brand small{display:block;font-weight:400;font-size:12px;color:var(--muted)}
+.tabs{margin:0 auto;background:var(--card);border-radius:999px;box-shadow:var(--shadow);padding:5px;display:flex;gap:4px}
+.tab{border:0;background:transparent;border-radius:999px;padding:7px 16px;font:inherit;cursor:pointer;color:var(--ink);transition:background .25s,color .25s}
+.tab.on,.tab:hover{background:var(--ink);color:#fff}
+.pill{border-radius:999px;padding:7px 14px;background:var(--card);box-shadow:var(--shadow);font-size:12px;color:var(--muted);max-width:330px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dark{border:0;border-radius:999px;padding:9px 16px;background:var(--ink);color:#fff;font:inherit;cursor:pointer;transition:transform .2s}
+.dark:hover{transform:translateY(-1px)}
+.grid{display:grid;grid-template-columns:1fr 1fr 1fr 300px;grid-template-rows:minmax(0,40fr) minmax(0,60fr);gap:16px;min-height:0}
+.card{background:var(--card);border-radius:var(--r);box-shadow:var(--shadow);padding:18px 20px;min-height:0;overflow:hidden;transition:box-shadow .3s,transform .3s}
+.card:hover{box-shadow:0 16px 40px rgba(28,36,52,.12)}
+.head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+.title{font-weight:600}
+.sub{color:var(--muted);font-size:12px}
+.shield{width:30px;height:30px;border-radius:50%;background:#fff;display:grid;place-items:center;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.shield svg{width:16px;height:16px;fill:none;stroke:var(--ink);stroke-width:1.8}
+.row1{grid-column:1/4;display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:16px;padding:16px}
+.mini{border-radius:20px;padding:16px 18px;display:flex;flex-direction:column;min-height:0;overflow:hidden;transition:box-shadow .3s}
+.mini.gray{background:var(--soft)}.mini.green{background:var(--green-soft)}.mini.blue{background:var(--blue-soft)}
+.big{font-size:44px;font-weight:600;line-height:1.05;margin:6px 0 2px}
+.big small{font-size:14px;font-weight:500;margin-left:6px}
+.bar{height:6px;border-radius:6px;background:rgba(0,0,0,.07);overflow:hidden;margin:10px 0}
+.bar i{display:block;height:100%;width:0;border-radius:6px;background:var(--green-d);transition:width .7s cubic-bezier(.2,.8,.2,1)}
+.mini.blue .bar i{background:#5b7be0}
+#intent{font-weight:600;margin:2px 0 8px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;overflow:auto;min-height:0}
+.chip{font:12px ui-monospace,Consolas,monospace;border-radius:999px;padding:3px 9px;background:#fff}
+.chip.yes{color:var(--green-d)}.chip.no{color:var(--red)}
+.foot{margin-top:auto;font-size:12px;color:var(--muted);display:flex;gap:10px;flex-wrap:wrap}
+.agent{grid-column:4;grid-row:1;display:flex;flex-direction:column;align-items:center;text-align:center}
+.avatar{width:84px;height:84px;border-radius:50%;display:grid;place-items:center;transition:background .6s;background:#eef1f5}
+.avatar span{width:70px;height:70px;border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center;font-weight:700;font-size:20px}
+#agentName{font-weight:600;margin-top:8px}
+#lastAct{font-size:12px;color:var(--muted);min-height:32px}
+.tag{border-radius:999px;background:var(--green-soft);color:var(--green-d);padding:3px 10px;font-size:12px;margin:4px 0}
+.tag.bad{background:#fde7e8;color:var(--red)}
+#toolBars{width:100%;flex:1;min-height:60px}
+.flow{grid-column:1/3;grid-row:2;display:flex;flex-direction:column}
+#stage{position:relative;flex:1;min-height:150px}
+.node{position:absolute;transform:translate(-50%,-50%);text-align:center;font-size:12px;color:var(--muted);max-width:150px}
+.node b{display:block;color:var(--ink);font-size:13px}
+.box{width:78px;height:50px;border-radius:16px;background:var(--soft);display:grid;place-items:center;margin:0 auto 6px;font-weight:600;color:var(--ink)}
+#gate .box{width:96px;height:96px;border-radius:28px;background:var(--ink);color:#fff;letter-spacing:2px;transition:box-shadow .35s}
+#gate.okf .box{box-shadow:0 0 0 8px rgba(127,209,165,.45)}
+#gate.badf .box{box-shadow:0 0 0 8px rgba(229,72,77,.35)}
+#agentN{left:9%;top:50%}#gate{left:50%;top:50%}#files{left:90%;top:26%}#net{left:90%;top:74%}
+.rail{position:absolute;top:50%;height:2px;background:repeating-linear-gradient(90deg,var(--line) 0 8px,transparent 8px 14px)}
+.r1{left:15%;width:28%}.r2{left:57%;width:27%}
+.call{position:absolute;left:10%;top:50%;transform:translate(-50%,-50%);padding:6px 12px;border-radius:999px;background:var(--ink);color:#fff;font:12px ui-monospace,Consolas,monospace;white-space:nowrap;box-shadow:0 6px 16px rgba(28,36,52,.18);transition:left .6s cubic-bezier(.2,.8,.2,1),top .6s cubic-bezier(.2,.8,.2,1),opacity .4s,background .3s;z-index:2}
+.call.scripted{outline:2px dashed #ffffffaa;outline-offset:-4px}
+.call.ok{background:var(--green-d)}
+.call.bad{background:var(--red);animation:shake .4s}
+.call.scan{background:linear-gradient(90deg,#3c5bd6,#9fb5ef,#3c5bd6);background-size:200% 100%;animation:sweep .9s linear infinite}
+.call.gone{opacity:0}
+@keyframes shake{20%,60%{margin-left:-7px}40%,80%{margin-left:7px}}
+@keyframes sweep{from{background-position:200% 0}to{background-position:-200% 0}}
+#caption{border-radius:16px;background:var(--soft);padding:10px 14px;transition:background .4s}
+#caption.ok{background:var(--green-soft)}#caption.bad{background:#fde7e8}
+#caption .h{font-weight:600}
+#caption .raw{font:11px ui-monospace,Consolas,monospace;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#latency{height:64px;margin-top:8px}
+.scans{grid-column:3;grid-row:2;display:flex;flex-direction:column}
+#scanBars{flex:1;min-height:80px}
+.badge{border-radius:999px;background:var(--green-soft);color:var(--green-d);padding:4px 10px;font-size:12px}
+.over{grid-column:4;grid-row:2;display:flex;flex-direction:column;align-items:center}
+.over .head{width:100%}
+#donut{width:180px;height:180px}
+.legend{display:flex;gap:12px;font-size:12px;color:var(--muted);flex-wrap:wrap;justify-content:center}
+.legend i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px}
+.lgA{background:#7fd1a5}.lgG{background:#1c2027}.lgS{background:#9fb5ef}
+svg text{font-family:inherit}
+.grow-bar{transform-box:fill-box;transform-origin:bottom;animation:grow .7s cubic-bezier(.2,.8,.2,1)}
+@keyframes grow{from{transform:scaleY(0)}}
+.draw{stroke-dasharray:1400;stroke-dashoffset:0;animation:draw 1s ease-out}
+@keyframes draw{from{stroke-dashoffset:1400}}
+.seg{transition:stroke-dasharray .7s cubic-bezier(.2,.8,.2,1),stroke-dashoffset .7s}
+#drawer{position:fixed;top:18px;right:18px;bottom:18px;width:min(720px,92vw);background:var(--card);border-radius:var(--r);box-shadow:0 30px 80px rgba(28,36,52,.25);padding:20px;transform:translateX(110%);transition:transform .45s cubic-bezier(.2,.8,.2,1);z-index:20;display:flex;flex-direction:column}
+#drawer.open{transform:none}
+.tablewrap{overflow:auto;flex:1}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--muted);font-weight:500;position:sticky;top:0;background:#fff}
+tr.bad td{background:#fff5f5}
+.mono{font-family:ui-monospace,Consolas,monospace}
+.dash{font-size:11px;border:1px dashed var(--muted);border-radius:6px;padding:0 5px;color:var(--muted)}
+#coach{position:fixed;inset:0;background:rgba(20,24,32,.45);opacity:0;pointer-events:none;transition:opacity .35s;z-index:30}
+#coach.open{opacity:1;pointer-events:auto}
+.spot{position:relative;z-index:31;box-shadow:0 0 0 4px var(--green),0 20px 60px rgba(0,0,0,.3)!important}
+#tip{position:fixed;width:340px;background:var(--card);border-radius:20px;box-shadow:0 20px 60px rgba(0,0,0,.25);padding:18px;z-index:32;transition:top .4s cubic-bezier(.2,.8,.2,1),left .4s cubic-bezier(.2,.8,.2,1),opacity .3s}
+#tip[hidden]{display:block;opacity:0;pointer-events:none}
+#tip .n{font-size:12px;color:var(--muted)}
+#tip p{margin:6px 0 14px}
+#tip .row{display:flex;gap:8px;justify-content:flex-end}
+#tip .ghost{border:0;background:var(--soft);border-radius:999px;padding:8px 14px;font:inherit;cursor:pointer}
+@media (max-width:1100px),(max-height:640px){html,body{height:auto}.app{height:auto;grid-template-columns:1fr}.side{flex-direction:row;height:auto;position:static;justify-content:center;padding:8px}.side .grow{display:none}.grid{grid-template-columns:1fr;grid-template-rows:auto}.row1,.agent,.flow,.scans,.over{grid-column:auto;grid-row:auto}.row1{grid-template-columns:1fr}#stage{min-height:220px}.tabs{display:none}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div class="app">
+  <nav class="side" aria-label="Sections">
+    <div class="logo">H</div>
+    <button class="ico on" id="navLive" type="button" title="Live overview"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></svg></button>
+    <button class="ico" id="navReceipt" type="button" title="What this task may do"><svg viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg></button>
+    <button class="ico" id="navScans" type="button" title="Semgrep scans"><svg viewBox="0 0 24 24"><path d="M4 19V9M10 19V5M16 19v-7M22 19H2"/></svg></button>
+    <button class="ico" id="navHistory" type="button" title="Every decision (ClickHouse)"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v4h4"/><path d="M12 7v5l3 2"/></svg></button>
+    <div class="grow"></div>
+    <button class="ico" id="navHelp" type="button" title="Tutorial"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6V14"/><path d="M12 17h.01"/></svg></button>
+  </nav>
+
+  <div class="main">
+    <header class="top">
+      <div class="brand">HOLD<small>Every action the AI takes passes through HOLD first</small></div>
+      <div class="tabs" role="tablist">
+        <button class="tab on" id="tabLive" type="button">Live</button>
+        <button class="tab" id="tabReceipt" type="button">Receipt</button>
+        <button class="tab" id="tabScans" type="button">Scans</button>
+        <button class="tab" id="tabHistory" type="button">History</button>
+      </div>
+      <span class="pill" id="source">connecting...</span>
+      <button class="dark" id="tour" type="button">How it works</button>
+    </header>
+
+    <section class="grid">
+      <div class="card row1">
+        <div class="mini gray" id="receipt">
+          <div class="head"><span class="title">Task receipt</span><span class="shield"><svg viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/></svg></span></div>
+          <div id="intent">Loading the task...</div>
+          <div class="chips" id="chips"></div>
+          <div class="foot" id="digest"></div>
+        </div>
+        <div class="mini green">
+          <div class="head"><span class="title">Allowed</span><span class="shield"><svg viewBox="0 0 24 24"><path d="M5 12l4 4 10-10"/></svg></span></div>
+          <div class="big"><span id="nAllow">0</span><small>calls</small></div>
+          <div class="bar"><i id="allowBar"></i></div>
+          <div class="sub">inside what the developer approved</div>
+          <div class="foot"><span id="readsW">0 reads</span><span id="writesW">0 writes</span></div>
+        </div>
+        <div class="mini blue">
+          <div class="head"><span class="title">Blocked before running</span><span class="shield"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M6.5 6.5l11 11"/></svg></span></div>
+          <div class="big"><span id="nDeny">0</span><small>calls</small></div>
+          <div class="bar"><i id="denyBar"></i></div>
+          <div class="sub">stopped by the gate or by Semgrep</div>
+          <div class="foot"><span id="byGate">0 by the gate</span><span id="bySemgrep">0 by Semgrep</span></div>
+        </div>
+      </div>
+
+      <div class="card agent" id="agentCard">
+        <div class="avatar" id="ring"><span id="initials">AI</span></div>
+        <div id="agentName">Waiting for the agent</div>
+        <div class="tag" id="lastTag">no actions yet</div>
+        <div id="lastAct"></div>
+        <svg id="toolBars" viewBox="0 0 260 110" preserveAspectRatio="none" aria-label="Calls per tool"></svg>
+      </div>
+
+      <div class="card flow" id="flow">
+        <div class="head"><span class="title">Live gate</span><span class="sub">each pill is one real tool call</span></div>
+        <div id="stage">
+          <div class="rail r1"></div><div class="rail r2"></div>
+          <div class="node" id="agentN"><div class="box">AI</div><b id="agentShort">Agent</b>asks to act</div>
+          <div class="node" id="gate"><div class="box">HOLD</div><b>Gate</b>checks the receipt</div>
+          <div class="node" id="files"><div class="box">Files</div></div>
+          <div class="node" id="net"><div class="box">Network</div></div>
+        </div>
+        <div id="caption" aria-live="polite"><div class="h">Waiting for the agent's first action.</div><div class="raw"></div></div>
+        <svg id="latency" viewBox="0 0 600 64" preserveAspectRatio="none" aria-label="Gate decision time per call"></svg>
+      </div>
+
+      <div class="card scans" id="scans">
+        <div class="head"><span class="title">Semgrep write scans</span><span class="badge" id="scanAvg">no scans yet</span></div>
+        <div class="big"><span id="nScan">0</span><small>scans</small></div>
+        <div class="sub">seconds per scan · green = clean, red = blocked</div>
+        <svg id="scanBars" viewBox="0 0 300 160" preserveAspectRatio="none" aria-label="Semgrep scan times"></svg>
+      </div>
+
+      <div class="card over" id="overview">
+        <div class="head"><span class="title">Overview</span><span class="sub" id="p50">gate p50 -</span></div>
+        <svg id="donut" viewBox="0 0 140 140" aria-label="Decisions overview"></svg>
+        <div class="legend"><span><i class="lgA"></i>Allowed</span><span><i class="lgG"></i>Gate block</span><span><i class="lgS"></i>Semgrep block</span></div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<aside id="drawer" aria-label="Every decision">
+  <div class="head"><span class="title">Every decision (one row each in ClickHouse)</span><button class="dark" id="closeDrawer" type="button">Close</button></div>
+  <div class="tablewrap"><table><thead><tr><th>Time (UTC)</th><th>Who</th><th>Tool</th><th>Target</th><th>Decision</th><th>Why</th></tr></thead><tbody id="rows"></tbody></table></div>
+</aside>
+
+<div id="coach"></div>
+<div id="tip" hidden><div class="n" id="tipStep"></div><p id="tipText"></p><div class="row"><button class="ghost" id="tipSkip" type="button">Skip</button><button class="dark" id="tipNext" type="button">Next</button></div></div>
+
+<script>
+"use strict";
+const $ = (id) => document.getElementById(id);
+function setText(node, text) { node.textContent = String(text); }
+function make(tag, text, cls) { const n = document.createElement(tag); if (text !== undefined) setText(n, text); if (cls) n.className = cls; return n; }
+const NS = "http://www.w3.org/2000/svg";
+function sv(tag, attrs, cls) { const n = document.createElementNS(NS, tag); for (const k in attrs) n.setAttribute(k, attrs[k]); if (cls) n.setAttribute("class", cls); return n; }
+
+const params = new URLSearchParams(location.search);
+let task = params.get("task") || "";
+const seen = new Set(), queue = [];
+let firstLoad = true, playing = false, lastSig = "";
+
+const AGENTS = { "claude-code": ["Claude Code", "CC"], "scripted-replay": ["Replay script", "RS"] };
+const who = (id) => (AGENTS[id] || [id])[0];
+const initials = (id) => (AGENTS[id] || [0, (id || "AI").slice(0, 2).toUpperCase()])[1];
+const key = (e) => [e.ts, e.agent_id, e.tool_name, e.target, e.decision].join("|");
+const scanMs = (e) => { const m = /scan (\d+) ms/.exec(e.reason || ""); return m ? Number(m[1]) : null; };
+const bySemgrep = (e) => e.decision === "DENY" && (e.reason || "").startsWith("Semgrep");
+
+function explain(e) {
+  const r = e.reason || "", t = e.target || "", ms = scanMs(e);
+  const scan = ms !== null ? " (Semgrep scan " + (ms / 1000).toFixed(1) + " s)" : "";
+  if (e.decision === "ALLOW") {
+    if (e.sink === "FS_WRITE") return ["Allowed: Semgrep found no new risky code, so " + t + " was written" + scan + ".", "ok"];
+    if (e.sink === "NETWORK_EGRESS") return ["Allowed: " + t + " is an approved host for this task, so the request was sent.", "ok"];
+    return ["Allowed: reading " + t + " is part of the approved task.", "ok"];
+  }
+  if (r.startsWith("Semgrep found")) { const m = /: (.*?) \(scan/.exec(r); return ["Blocked by Semgrep: the new code adds " + (m ? m[1] : "a risky call") + ". Nothing was written" + scan + ".", "bad"]; }
+  if (r.startsWith("Semgrep")) return ["Blocked: the code scan could not run, so HOLD refused the write (fails closed).", "bad"];
+  if (r.startsWith("network egress not granted")) return ["Blocked: this task may not use the network. The request never left HOLD.", "bad"];
+  if (r.indexOf("host_allowlist") >= 0) return ["Blocked: " + t + " is not an approved host.", "bad"];
+  if (r.startsWith("protected resource")) return ["Blocked: " + t + " is a protected file (secrets, git or CI config).", "bad"];
+  if (r.indexOf("allowlist") >= 0) return ["Blocked: " + t + " is outside what this task may touch.", "bad"];
+  if (r.indexOf("not offered") >= 0) return ["Blocked: HOLD does not offer the tool '" + e.tool_name + "'.", "bad"];
+  if (r.indexOf("link") >= 0) return ["Blocked: writing through a link is not allowed.", "bad"];
+  return ["Blocked: " + r, "bad"];
+}
+
+function caption(e) {
+  const [head, cls] = explain(e), box = $("caption");
+  box.className = cls;
+  box.replaceChildren(make("div", head, "h"), make("div", who(e.agent_id) + (e.agent_id === "scripted-replay" ? " (scripted, not the AI model)" : "") + " · " + e.tool_name + " · raw: " + e.reason, "raw"));
+}
+
+function setAgent(e) {
+  setText($("agentName"), who(e.agent_id)); setText($("agentShort"), who(e.agent_id)); setText($("initials"), initials(e.agent_id));
+  const tag = $("lastTag"); setText(tag, e.decision === "ALLOW" ? "last action allowed" : "last action blocked"); tag.className = "tag" + (e.decision === "ALLOW" ? "" : " bad");
+  setText($("lastAct"), e.tool_name + " " + (e.target || "") + (e.agent_id === "scripted-replay" ? " · scripted, not the AI" : ""));
+}
+
+const wait = (ms) => new Promise((ok) => setTimeout(ok, ms));
+function dest(e) { return e.sink === "NETWORK_EGRESS" ? ["90%", "74%"] : (e.sink === "FS_READ" || e.sink === "FS_WRITE") ? ["90%", "26%"] : ["50%", "50%"]; }
+async function animate(e) {
+  setAgent(e);
+  const pill = make("div", e.tool_name + "  " + (e.target || ""), "call" + (e.agent_id === "scripted-replay" ? " scripted" : ""));
+  $("stage").append(pill);
+  await wait(40); pill.style.left = "37%"; await wait(650);
+  if (e.sink === "FS_WRITE" && scanMs(e) !== null) { pill.classList.add("scan"); await wait(1200); pill.classList.remove("scan"); }
+  const gate = $("gate");
+  if (e.decision === "ALLOW") { pill.classList.add("ok"); gate.classList.add("okf"); const [l, t] = dest(e); pill.style.left = l; pill.style.top = t; }
+  else { pill.classList.add("bad"); gate.classList.add("badf"); }
+  caption(e);
+  await wait(1000); gate.classList.remove("okf", "badf"); pill.classList.add("gone"); await wait(450); pill.remove();
+}
+async function play() { if (playing) return; playing = true; while (queue.length) await animate(queue.shift()); playing = false; }
+
+function countTo(node, target) {
+  const from = Number(node.textContent) || 0; if (from === target) return;
+  const t0 = performance.now();
+  const step = (t) => { const p = Math.min(1, (t - t0) / 600); setText(node, Math.round(from + (target - from) * (1 - Math.pow(1 - p, 3)))); if (p < 1) requestAnimationFrame(step); };
+  requestAnimationFrame(step);
+}
+
+function donut(a, g, s) {
+  const svg = $("donut"), total = a + g + s, C = 2 * Math.PI * 52;
+  if (!svg.firstChild) {
+    svg.append(sv("circle", { cx: 70, cy: 70, r: 52, fill: "none", stroke: "#eef1f5", "stroke-width": 16 }));
+    for (const [id, color] of [["dA", "#7fd1a5"], ["dG", "#1c2027"], ["dS", "#9fb5ef"]]) svg.append(sv("circle", { id, cx: 70, cy: 70, r: 52, fill: "none", stroke: color, "stroke-width": 16, transform: "rotate(-90 70 70)", "stroke-dasharray": "0 " + C }, "seg"));
+    const big = sv("text", { x: 70, y: 72, "text-anchor": "middle", "font-size": 26, "font-weight": 600, fill: "#1c2027", id: "dTotal" });
+    const small = sv("text", { x: 70, y: 90, "text-anchor": "middle", "font-size": 11, fill: "#7b8494" }); setText(small, "tool calls");
+    svg.append(big, small);
+  }
+  let offset = 0;
+  for (const [id, v] of [["dA", a], ["dG", g], ["dS", s]]) {
+    const len = total ? (v / total) * C : 0, el = svg.querySelector("#" + id);
+    el.setAttribute("stroke-dasharray", len + " " + (C - len)); el.setAttribute("stroke-dashoffset", String(-offset)); offset += len;
+  }
+  setText(svg.querySelector("#dTotal"), total);
+}
+
+function bars(svg, items, w, h, labelFn) {
+  svg.replaceChildren();
+  if (!items.length) { const t = sv("text", { x: w / 2, y: h / 2, "text-anchor": "middle", "font-size": 12, fill: "#7b8494" }); setText(t, "no data yet"); svg.append(t); return; }
+  const max = Math.max(...items.map((i) => i.v), 1), n = items.length, gap = 10, bw = Math.min(42, (w - gap * (n + 1)) / n), base = h - 18;
+  items.forEach((it, i) => {
+    const x = gap + i * (bw + gap), bh = Math.max(3, (it.v / max) * (base - 16));
+    svg.append(sv("rect", { x, y: base - bh, width: bw, height: bh, rx: 8, fill: it.c }, "grow-bar"));
+    const lab = sv("text", { x: x + bw / 2, y: h - 4, "text-anchor": "middle", "font-size": 10, fill: "#7b8494" }); setText(lab, it.l); svg.append(lab);
+    const val = sv("text", { x: x + bw / 2, y: base - bh - 4, "text-anchor": "middle", "font-size": 10, fill: "#1c2027" }); setText(val, labelFn(it.v)); svg.append(val);
+  });
+}
+
+function area(values) {
+  const svg = $("latency"), w = 600, h = 64; svg.replaceChildren();
+  if (values.length < 2) return;
+  const max = Math.max(...values, 1), step = w / (values.length - 1);
+  const pts = values.map((v, i) => [i * step, h - 6 - (v / max) * (h - 18)]);
+  let d = "M" + pts[0][0] + "," + pts[0][1];
+  for (let i = 1; i < pts.length; i++) { const [x0, y0] = pts[i - 1], [x1, y1] = pts[i], cx = (x0 + x1) / 2; d += " C" + cx + "," + y0 + " " + cx + "," + y1 + " " + x1 + "," + y1; }
+  const defs = sv("defs", {}), g = sv("linearGradient", { id: "lg", x1: 0, y1: 0, x2: 0, y2: 1 });
+  g.append(sv("stop", { offset: "0", "stop-color": "#7fd1a5", "stop-opacity": ".55" }), sv("stop", { offset: "1", "stop-color": "#7fd1a5", "stop-opacity": "0" }));
+  defs.append(g); svg.append(defs);
+  svg.append(sv("path", { d: d + " L" + w + "," + h + " L0," + h + " Z", fill: "url(#lg)" }));
+  svg.append(sv("path", { d, fill: "none", stroke: "#3fae74", "stroke-width": 2 }, "draw"));
+  const lab = sv("text", { x: 4, y: 12, "font-size": 11, fill: "#7b8494" }); setText(lab, "gate decision time per call (µs), oldest → newest"); svg.append(lab);
+}
+
+function render(events) {
+  const sig = events.length + "|" + (events[0] ? key(events[0]) : ""); if (sig === lastSig) return; lastSig = sig;
+  let a = 0, g = 0, s = 0, reads = 0, writes = 0;
+  const tools = {};
+  for (const e of events) {
+    if (e.decision === "ALLOW") { a++; if (e.sink === "FS_READ") reads++; if (e.sink === "FS_WRITE") writes++; } else if (bySemgrep(e)) s++; else g++;
+    tools[e.tool_name] = tools[e.tool_name] || { ok: 0, bad: 0 }; tools[e.tool_name][e.decision === "ALLOW" ? "ok" : "bad"]++;
+  }
+  const total = a + g + s;
+  countTo($("nAllow"), a); countTo($("nDeny"), g + s);
+  $("allowBar").style.width = (total ? (a / total) * 100 : 0) + "%"; $("denyBar").style.width = (total ? ((g + s) / total) * 100 : 0) + "%";
+  setText($("readsW"), reads + " reads"); setText($("writesW"), writes + " writes"); setText($("byGate"), g + " by the gate"); setText($("bySemgrep"), s + " by Semgrep");
+  $("ring").style.background = "conic-gradient(#7fd1a5 " + (total ? (a / total) * 360 : 0) + "deg, #f2b8ba 0)";
+  donut(a, g, s);
+  const toolItems = [];
+  for (const [name, c] of Object.entries(tools)) {
+    const short = name.replace("_file", "").replace("_url", "");
+    if (c.ok) toolItems.push({ l: short + " ✓", v: c.ok, c: "#7fd1a5" });
+    if (c.bad) toolItems.push({ l: short + " ✗", v: c.bad, c: "#e5484d" });
+  }
+  bars($("toolBars"), toolItems.slice(0, 6), 260, 110, (v) => v);
+  const allScans = events.filter((e) => scanMs(e) !== null), scans = allScans.slice(0, 8).reverse();
+  countTo($("nScan"), allScans.length);
+  bars($("scanBars"), scans.map((e) => ({ l: e.ts.slice(11, 16), v: scanMs(e) / 1000, c: e.decision === "ALLOW" ? "#7fd1a5" : "#e5484d" })), 300, 160, (v) => v.toFixed(1) + "s");
+  if (scans.length) setText($("scanAvg"), "avg " + (scans.reduce((x, e) => x + scanMs(e), 0) / scans.length / 1000).toFixed(1) + " s");
+  area(events.slice(0, 40).reverse().map((e) => e.gate_us));
+  const rows = [];
+  for (const e of events) {
+    const tr = make("tr", undefined, e.decision === "DENY" ? "bad" : ""), w = make("td", who(e.agent_id));
+    if (e.agent_id === "scripted-replay") w.append(" ", make("span", "scripted", "dash"));
+    tr.append(make("td", e.ts.slice(11, 19), "mono"), w, make("td", e.tool_name, "mono"), make("td", e.target, "mono"), make("td", e.decision), make("td", explain(e)[0]));
+    rows.push(tr);
+  }
+  $("rows").replaceChildren(...rows);
+}
+
+async function getJSON(path) { const r = await fetch(path, { cache: "no-store" }); const body = await r.json(); if (!r.ok) throw new Error(body.error || ("HTTP " + r.status)); return body; }
+
+async function loadReceipt() {
+  try {
+    const rc = await getJSON("/api/receipt");
+    if (!task) task = rc.task_id;
+    setText($("intent"), rc.intent);
+    const chips = [];
+    for (const p of rc.read) chips.push(make("span", "✓ read " + p, "chip yes"));
+    for (const p of rc.write) chips.push(make("span", "✓ write " + p, "chip yes"));
+    if (rc.network_egress) for (const h of rc.host_allowlist) chips.push(make("span", "✓ net " + h, "chip yes"));
+    else chips.push(make("span", "✗ no network", "chip no"));
+    chips.push(make("span", "✗ no shell / git", "chip no"), make("span", "✗ secrets, .git, CI", "chip no"));
+    $("chips").replaceChildren(...chips);
+    setText($("digest"), "digest " + rc.digest_prefix + "… (identifies the policy; not a signature)");
+  } catch (err) { setText($("intent"), "Receipt not available: " + err.message); }
+}
+
+async function poll() {
+  try {
+    if (!task) { const h = await getJSON("/api/health"); task = h.default_task; }
+    const [ev, sm] = await Promise.all([getJSON("/api/events?task=" + encodeURIComponent(task) + "&limit=200"), getJSON("/api/summary?task=" + encodeURIComponent(task))]);
+    setText($("source"), ev.source_label + " · " + task);
+    const fresh = [];
+    for (const e of ev.events.slice().reverse()) { const k = key(e); if (!seen.has(k)) { seen.add(k); fresh.push(e); } }
+    if (!firstLoad) { queue.push(...fresh); play(); } else if (ev.events.length) { caption(ev.events[0]); setAgent(ev.events[0]); }
+    firstLoad = false;
+    render(ev.events);
+    let best = null; for (const row of sm.summary || []) if (!best || row.calls > best.calls) best = row;
+    setText($("p50"), best ? "gate p50 " + best.p50_us + " µs" : "gate p50 -");
+  } catch (err) { setText($("source"), "Not connected: " + err.message); }
+  setTimeout(poll, 1000);
+}
+
+function focusCard(id) { const el = $(id); el.classList.add("spot"); setTimeout(() => el.classList.remove("spot"), 1400); }
+function selectTab(name) {
+  for (const t of ["Live", "Receipt", "Scans", "History"]) { $("tab" + t).classList.toggle("on", t === name); $("nav" + t).classList.toggle("on", t === name); }
+  $("drawer").classList.toggle("open", name === "History");
+  if (name === "Receipt") focusCard("receipt");
+  if (name === "Scans") focusCard("scans");
+}
+for (const t of ["Live", "Receipt", "Scans", "History"]) { $("tab" + t).addEventListener("click", () => selectTab(t)); $("nav" + t).addEventListener("click", () => selectTab(t)); }
+$("closeDrawer").addEventListener("click", () => selectTab("Live"));
+
+const STEPS = [
+  ["receipt", "This is what the developer approved for this task. Anything outside it is refused."],
+  ["flow", "Every action the AI takes travels through the HOLD gate. Green passes. Red is stopped before it runs."],
+  ["scans", "Every allowed write is scanned by Semgrep first. New network, process or eval code is refused."],
+  ["overview", "The totals, live. Every decision is also a row in ClickHouse: open History in the sidebar."],
+];
+let stepIndex = 0;
+function showStep() {
+  document.querySelectorAll(".spot").forEach((n) => n.classList.remove("spot"));
+  const tip = $("tip");
+  if (stepIndex >= STEPS.length) { $("coach").classList.remove("open"); tip.hidden = true; try { localStorage.setItem("hold-tour-v2", "1"); } catch (e) {} return; }
+  const [id, text] = STEPS[stepIndex], target = $(id); target.classList.add("spot");
+  const box = target.getBoundingClientRect();
+  setText($("tipStep"), "Step " + (stepIndex + 1) + " of " + STEPS.length); setText($("tipText"), text);
+  setText($("tipNext"), stepIndex === STEPS.length - 1 ? "Done" : "Next");
+  tip.hidden = false;
+  const below = box.bottom + 14, top = below + 170 < innerHeight ? below : Math.max(14, box.top - 180);
+  tip.style.top = top + "px"; tip.style.left = Math.max(14, Math.min(innerWidth - 354, box.left)) + "px";
+}
+function startTour() { stepIndex = 0; $("coach").classList.add("open"); showStep(); }
+$("tipNext").addEventListener("click", () => { stepIndex++; showStep(); });
+$("tipSkip").addEventListener("click", () => { stepIndex = STEPS.length; showStep(); });
+$("tour").addEventListener("click", startTour); $("navHelp").addEventListener("click", startTour);
+
+loadReceipt().then(poll);
+let done = false; try { done = localStorage.getItem("hold-tour-v2") === "1"; } catch (e) {}
+if (!done) setTimeout(startTour, 800);
+</script>
+</body>
+</html>

@@ -352,7 +352,7 @@ class FakeClickHouseClient:
         if sql == tch.LIVE_FEED_SQL:
             return FakeClickHouseResult([{
                 "ts": datetime(2026, 10, 9, 18, 0, 1, 250000),  # naive UTC, as clickhouse-connect returns it
-                "tool_name": "read_file", "sink": "FS_READ", "target": PAYLOAD_PATH, "decision": "DENY",
+                "agent_id": "claude-code", "tool_name": "read_file", "sink": "FS_READ", "target": PAYLOAD_PATH, "decision": "DENY",
                 "reason": "protected", "exec_status": "not_run", "gate_us": 12.3}] * 3)
         if sql == tch.SUMMARY_SQL:
             return FakeClickHouseResult([{"decision": "DENY", "calls": 3, "p50_us": 12.3, "p95_us": 12.3},
@@ -390,7 +390,7 @@ class ClickHouseSourceWithFakeClient(unittest.TestCase):
         self.assertEqual(body["source"], "clickhouse")
         self.assertEqual(body["source_label"], "ClickHouse default.hold_events (read-only user)")
         self.assertEqual(body["events"], [{
-            "ts": "2026-10-09T18:00:01.250000+00:00", "tool_name": "read_file", "sink": "FS_READ",
+            "ts": "2026-10-09T18:00:01.250000+00:00", "agent_id": "claude-code", "tool_name": "read_file", "sink": "FS_READ",
             "target": PAYLOAD_PATH, "decision": "DENY", "reason": "protected", "exec_status": "not_run",
             "gate_us": 12.3}] * 2)
         status, _, body = get_json(port, "/api/summary?task=" + "x%27%20OR%201%3D1%20--")
