@@ -64,6 +64,18 @@ cp .env.example .env          # fill in ClickHouse values; .env is gitignored
 .venv/Scripts/python harness.py --scan-bench  # Semgrep write-scan latency on your machine
 ```
 
+## Any GitHub repo + issue (one command)
+
+```bash
+.venv/Scripts/python scripts/github_task.py --repo owner/name --issue 1 --write src/pkg/module.py
+```
+Clones the repo outside HOLD, saves the issue as untrusted `ISSUE.md`, writes a receipt (read the
+repo except protected files; write only `--write`; no network, shell or git), renders the config and
+prints the run and dashboard commands. The fix stays a local diff; HOLD never pushes. Agents navigate
+real repos with `list_files`, `search_code`, `read_lines` and `edit_file`, all behind the same gate,
+protected-file rules, Semgrep scan and audit. Verified on `shehryaur/flask` issue #1: the agent
+searched, read lines 1517+, edited `get_auth_token`, Semgrep scanned the result, and the fix was written.
+
 ## Running with Claude Code
 
 ```bash

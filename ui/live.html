@@ -5,55 +5,90 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>HOLD live</title>
 <style>
-:root{--bg:#e8ecf2;--card:#fff;--soft:#f2f4f7;--green:#7fd1a5;--green-d:#3fae74;--green-soft:#e2f4e9;--blue:#9fb5ef;--blue-soft:#dfe6fa;--ink:#1c2027;--muted:#7b8494;--red:#e5484d;--line:#e6e9ef;--shadow:0 10px 30px rgba(28,36,52,.08);--r:24px}
+:root{--bg:#f1f3f6;--card:#fff;--soft:#f5f6f8;--green:#7fd1a5;--green-d:#238052;--green-soft:#edf7f1;--blue:#9fb5ef;--blue-soft:#eef2fb;--ink:#1c2027;--muted:#636d7c;--red:#bf343a;--line:#e6e9ef;--shadow:0 4px 20px rgba(28,36,52,.035);--r:20px}
 *{box-sizing:border-box}
 html,body{height:100%}
 body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.4 "Segoe UI",system-ui,-apple-system,sans-serif}
-.app{display:grid;grid-template-columns:72px 1fr;gap:18px;height:100vh;padding:18px}
-.side{background:var(--card);border-radius:var(--r);box-shadow:var(--shadow);display:flex;flex-direction:column;align-items:center;gap:10px;padding:16px 0;height:calc(100vh - 36px);position:sticky;top:18px}
-.logo{width:40px;height:40px;border-radius:14px;background:var(--ink);color:#fff;display:grid;place-items:center;font-weight:800;margin-bottom:8px}
-.ico{width:42px;height:42px;border-radius:14px;border:0;background:transparent;display:grid;place-items:center;cursor:pointer;color:var(--muted);transition:background .25s,color .25s,transform .2s}
-.ico:hover{background:var(--soft);color:var(--ink);transform:translateY(-1px)}
-.ico.on{background:var(--soft);color:var(--ink)}
-.ico svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-.side .grow{flex:1}
+.app{display:grid;min-height:100vh;padding:24px;max-width:1800px;margin:auto}
 .main{display:grid;grid-template-rows:52px 1fr;gap:16px;min-height:0}
 .top{display:flex;align-items:center;gap:14px}
 .brand{font-weight:700;font-size:18px}.brand small{display:block;font-weight:400;font-size:12px;color:var(--muted)}
-.tabs{margin:0 auto;background:var(--card);border-radius:999px;box-shadow:var(--shadow);padding:5px;display:flex;gap:4px}
+.tabs{margin-left:28px;display:flex;gap:4px}
 .tab{border:0;background:transparent;border-radius:999px;padding:7px 16px;font:inherit;cursor:pointer;color:var(--ink);transition:background .25s,color .25s}
-.tab.on,.tab:hover{background:var(--ink);color:#fff}
-.pill{border-radius:999px;padding:7px 14px;background:var(--card);box-shadow:var(--shadow);font-size:12px;color:var(--muted);max-width:330px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tab.on,.tab:hover{background:var(--card)}
+.source{margin-left:auto;font-size:12px;color:var(--muted);text-align:right;overflow-wrap:anywhere}
 .dark{border:0;border-radius:999px;padding:9px 16px;background:var(--ink);color:#fff;font:inherit;cursor:pointer;transition:transform .2s}
 .dark:hover{transform:translateY(-1px)}
-.grid{display:grid;grid-template-columns:1fr 1fr 1fr 300px;grid-template-rows:minmax(0,40fr) minmax(0,60fr);gap:16px;min-height:0}
-.card{background:var(--card);border-radius:var(--r);box-shadow:var(--shadow);padding:18px 20px;min-height:0;overflow:hidden;transition:box-shadow .3s,transform .3s}
-.card:hover{box-shadow:0 16px 40px rgba(28,36,52,.12)}
-.head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
-.title{font-weight:600}
+.grid{display:grid;grid-template-columns:1fr 1fr 1fr 260px;grid-template-rows:minmax(260px,.9fr) minmax(320px,1.1fr);gap:16px;min-height:0}
+.card{background:var(--card);border-radius:var(--r);box-shadow:var(--shadow);padding:20px;min-height:0;min-width:0;overflow:hidden}
+.head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px;width:100%;flex-shrink:0}
+.title{font-weight:600;margin-right:auto}
 .sub{color:var(--muted);font-size:12px}
-.shield{width:30px;height:30px;border-radius:50%;background:#fff;display:grid;place-items:center;box-shadow:0 2px 8px rgba(0,0,0,.06)}
-.shield svg{width:16px;height:16px;fill:none;stroke:var(--ink);stroke-width:1.8}
-.row1{grid-column:1/4;display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:16px;padding:16px}
-.mini{border-radius:20px;padding:16px 18px;display:flex;flex-direction:column;min-height:0;overflow:hidden;transition:box-shadow .3s}
+.help{width:30px;height:30px;flex:0 0 30px;border:0;border-radius:50%;background:rgba(255,255,255,.7);color:var(--muted);display:grid;place-items:center;cursor:help;padding:6px}
+.help:hover,.help[aria-expanded="true"]{background:var(--ink);color:white}
+.help svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;pointer-events:none}
+button:focus-visible,summary:focus-visible{outline:2px solid #4263ba;outline-offset:4px}
+#blockHelp{position:fixed;z-index:40;max-width:min(290px,calc(100vw - 24px));padding:12px 15px;border-radius:12px;background:var(--ink);color:white;font-size:13px;line-height:1.5;box-shadow:0 8px 28px #1c202730;overflow-wrap:anywhere}
+[hidden]{display:none!important}
+.guide-pet{position:fixed;z-index:30;left:calc(100vw - 92px);top:calc(100vh - 92px);width:66px;height:66px;border:0;border-radius:50%;background:#ffffff;box-shadow:0 12px 34px rgba(28,36,52,.16),0 2px 8px rgba(28,36,52,.06);display:grid;place-items:center;cursor:pointer;transition:left .5s cubic-bezier(.2,.8,.2,1),top .5s cubic-bezier(.2,.8,.2,1),transform .25s,box-shadow .25s}
+.guide-pet:hover,.guide-pet[aria-expanded="true"]{transform:translateY(-3px);box-shadow:0 16px 42px rgba(35,128,82,.22),0 4px 12px rgba(28,36,52,.08)}
+.puppet-stage{position:relative;display:grid;place-items:center;width:100%;height:100%}
+.puppet-svg{filter:drop-shadow(0 2px 4px rgba(28,36,52,.1));transition:transform .3s cubic-bezier(.34,1.56,.64,1);animation:puppetBob 3.2s ease-in-out infinite}
+.guide-pet:hover .puppet-svg{transform:scale(1.1) rotate(-3deg);animation-play-state:paused}
+.guide-pet.bounce .puppet-svg{animation:puppetHop .55s cubic-bezier(.34,1.56,.64,1)}
+.puppet-eyes{transform-origin:27px 25px;animation:eyeBlink 4.2s ease-in-out infinite}
+.puppet-badge{position:absolute;bottom:-6px;background:var(--green-d);color:#fff;font-size:9px;font-weight:700;letter-spacing:.3px;padding:1px 6px;border-radius:999px;box-shadow:0 2px 6px rgba(35,128,82,.35);pointer-events:none;text-transform:uppercase}
+@keyframes puppetBob{0%,100%{transform:translateY(0) rotate(0deg)}50%{transform:translateY(-3px) rotate(1.5deg)}}
+@keyframes puppetHop{0%{transform:scale(0.9) translateY(4px)}45%{transform:scale(1.18) translateY(-9px) rotate(-4deg)}75%{transform:scale(0.97) translateY(1px) rotate(2deg)}100%{transform:scale(1) translateY(0) rotate(0deg)}}
+@keyframes eyeBlink{0%,90%,100%{transform:scaleY(1)}93%,97%{transform:scaleY(0.1)}}
+.guide-panel{position:fixed;z-index:31;right:24px;bottom:94px;width:min(360px,calc(100vw - 28px));max-height:min(520px,calc(100vh - 120px));background:var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:0 22px 60px rgba(28,36,52,.22);display:flex;flex-direction:column;overflow:hidden;transition:box-shadow .25s}
+.guide-panel[hidden]{display:none!important}
+.guide-head{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#fff,#fafbfd)}
+.guide-avatar{width:36px;height:36px;border-radius:50%;background:var(--soft);display:grid;place-items:center;flex-shrink:0;box-shadow:0 2px 6px rgba(28,36,52,.06)}
+.guide-meta{display:flex;flex-direction:column;gap:1px;min-width:0;flex:1}
+.guide-title-row{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap}
+.guide-title{font-weight:700;font-size:14px;color:var(--ink)}
+.guild-badge{font-size:11px;color:var(--muted);font-weight:400}
+.guild-badge a{color:var(--green-d);text-decoration:none;font-weight:600}
+.guild-badge a:hover{text-decoration:underline}
+.guide-block{font-size:12px;color:var(--muted);font-weight:500}
+.guide-close{margin-left:auto;width:28px;height:28px;border:0;border-radius:50%;background:var(--soft);color:var(--ink);cursor:pointer;font:16px/1 system-ui;display:grid;place-items:center}
+.guide-close:hover{background:var(--line)}
+.guide-log{display:grid;gap:10px;padding:14px;overflow:auto;min-height:140px;max-height:320px}
+.msg{max-width:90%;border-radius:14px;padding:10px 12px;font-size:13px;line-height:1.45;overflow-wrap:anywhere}
+.msg.bot{background:var(--soft);color:var(--ink);justify-self:start;border-bottom-left-radius:4px;border-left:3px solid var(--green)}
+.msg.user{background:var(--ink);color:white;justify-self:end;border-bottom-right-radius:4px}
+.guide-form{display:flex;gap:8px;padding:12px;border-top:1px solid var(--line);background:#fff}
+.guide-form input{flex:1;min-width:0;border:1px solid var(--line);border-radius:999px;padding:10px 14px;font:inherit;background:#fff;color:var(--ink)}
+.guide-form input:focus{outline:2px solid var(--green);border-color:transparent}
+.guide-form button{border:0;border-radius:50%;width:38px;height:38px;background:var(--ink);color:white;cursor:pointer;display:grid;place-items:center;flex:0 0 38px;transition:background .2s,transform .2s}
+.guide-form button:hover{background:var(--green-d);transform:scale(1.04)}
+.guide-form button svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.guide-block-target{cursor:pointer;transition:transform .2s,box-shadow .2s}
+.guide-block-target:hover{box-shadow:0 8px 24px rgba(35,128,82,.1)}
+.row1{grid-column:1/4;display:grid;grid-template-columns:1.5fr 1fr 1fr;gap:12px;padding:12px}
+.mini{border-radius:14px;padding:16px 18px;display:flex;flex-direction:column;min-height:0;min-width:0;overflow:hidden}
 .mini.gray{background:var(--soft)}.mini.green{background:var(--green-soft)}.mini.blue{background:var(--blue-soft)}
-.big{font-size:44px;font-weight:600;line-height:1.05;margin:6px 0 2px}
+.big{font-size:44px;font-weight:600;line-height:1.05;margin:10px 0 18px;font-variant-numeric:tabular-nums}
 .big small{font-size:14px;font-weight:500;margin-left:6px}
-.bar{height:6px;border-radius:6px;background:rgba(0,0,0,.07);overflow:hidden;margin:10px 0}
-.bar i{display:block;height:100%;width:0;border-radius:6px;background:var(--green-d);transition:width .7s cubic-bezier(.2,.8,.2,1)}
-.mini.blue .bar i{background:#5b7be0}
-#intent{font-weight:600;margin:2px 0 8px}
-.chips{display:flex;flex-wrap:wrap;gap:6px;overflow:auto;min-height:0}
-.chip{font:12px ui-monospace,Consolas,monospace;border-radius:999px;padding:3px 9px;background:#fff}
-.chip.yes{color:var(--green-d)}.chip.no{color:var(--red)}
+#intent{font-weight:500;margin:0 0 14px;overflow-wrap:anywhere}
+.receipt-body{overflow:auto;min-height:0;max-height:300px;scrollbar-width:thin;padding:2px 4px 4px 0}
+.permissions{margin:0;display:grid;gap:7px;font-size:12px}
+.permissions div{display:grid;grid-template-columns:60px minmax(0,1fr);gap:8px}
+.permissions dt{color:var(--muted)}.permissions dd{margin:0;text-align:right;overflow-wrap:anywhere}
+.permission-details{margin-top:14px;font-size:12px}
+.permission-details summary{cursor:pointer;color:var(--muted);width:fit-content}
+.permission-details[open] summary{margin-bottom:12px}
+.permission-group{margin:12px 0}.permission-group h3{font-size:12px;font-weight:600;margin:0 0 5px}
+.permission-group ul{list-style:none;padding:0;margin:0;display:grid;gap:4px;overflow-wrap:anywhere;font:11px/1.5 ui-monospace,Consolas,monospace}
+.permission-details p{color:var(--muted);margin:10px 0;overflow-wrap:anywhere}
 .foot{margin-top:auto;font-size:12px;color:var(--muted);display:flex;gap:10px;flex-wrap:wrap}
 .agent{grid-column:4;grid-row:1;display:flex;flex-direction:column;align-items:center;text-align:center}
-.avatar{width:84px;height:84px;border-radius:50%;display:grid;place-items:center;transition:background .6s;background:#eef1f5}
-.avatar span{width:70px;height:70px;border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center;font-weight:700;font-size:20px}
+.avatar{width:54px;height:54px;flex-shrink:0;border-radius:50%;display:grid;place-items:center;background:var(--soft)}
+.avatar span{width:46px;height:46px;border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center;font-weight:700;font-size:15px}
 #agentName{font-weight:600;margin-top:8px}
-#lastAct{font-size:12px;color:var(--muted);min-height:32px}
-.tag{border-radius:999px;background:var(--green-soft);color:var(--green-d);padding:3px 10px;font-size:12px;margin:4px 0}
-.tag.bad{background:#fde7e8;color:var(--red)}
+#lastAct{font-size:11px;color:var(--muted);max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tag{color:var(--green-d);font-size:12px;margin:4px 0}.tag.bad{color:var(--red)}
 #toolBars{width:100%;flex:1;min-height:60px}
 .flow{grid-column:1/3;grid-row:2;display:flex;flex-direction:column}
 #stage{position:relative;flex:1;min-height:150px}
@@ -76,12 +111,10 @@ body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.4 "Segoe UI",sys
 @keyframes sweep{from{background-position:200% 0}to{background-position:-200% 0}}
 #caption{border-radius:16px;background:var(--soft);padding:10px 14px;transition:background .4s}
 #caption.ok{background:var(--green-soft)}#caption.bad{background:#fde7e8}
-#caption .h{font-weight:600}
-#caption .raw{font:11px ui-monospace,Consolas,monospace;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#latency{height:64px;margin-top:8px}
+#caption .h{font-weight:500;overflow-wrap:anywhere}
+#latency{height:40px;margin-top:4px;flex-shrink:0}
 .scans{grid-column:3;grid-row:2;display:flex;flex-direction:column}
 #scanBars{flex:1;min-height:80px}
-.badge{border-radius:999px;background:var(--green-soft);color:var(--green-d);padding:4px 10px;font-size:12px}
 .over{grid-column:4;grid-row:2;display:flex;flex-direction:column;align-items:center}
 .over .head{width:100%}
 #donut{width:180px;height:180px}
@@ -94,8 +127,8 @@ svg text{font-family:inherit}
 .draw{stroke-dasharray:1400;stroke-dashoffset:0;animation:draw 1s ease-out}
 @keyframes draw{from{stroke-dashoffset:1400}}
 .seg{transition:stroke-dasharray .7s cubic-bezier(.2,.8,.2,1),stroke-dashoffset .7s}
-#drawer{position:fixed;top:18px;right:18px;bottom:18px;width:min(720px,92vw);background:var(--card);border-radius:var(--r);box-shadow:0 30px 80px rgba(28,36,52,.25);padding:20px;transform:translateX(110%);transition:transform .45s cubic-bezier(.2,.8,.2,1);z-index:20;display:flex;flex-direction:column}
-#drawer.open{transform:none}
+#drawer{position:fixed;top:18px;right:18px;bottom:18px;width:min(720px,92vw);background:var(--card);border-radius:var(--r);box-shadow:0 30px 80px rgba(28,36,52,.25);padding:20px;visibility:hidden;transform:translateX(110%);transition:transform .3s ease;z-index:20;display:flex;flex-direction:column}
+#drawer.open{transform:none;visibility:visible}
 .tablewrap{overflow:auto;flex:1}
 table{width:100%;border-collapse:collapse;font-size:12px}
 th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:top}
@@ -103,69 +136,57 @@ th{color:var(--muted);font-weight:500;position:sticky;top:0;background:#fff}
 tr.bad td{background:#fff5f5}
 .mono{font-family:ui-monospace,Consolas,monospace}
 .dash{font-size:11px;border:1px dashed var(--muted);border-radius:6px;padding:0 5px;color:var(--muted)}
-#coach{position:fixed;inset:0;background:rgba(20,24,32,.45);opacity:0;pointer-events:none;transition:opacity .35s;z-index:30}
-#coach.open{opacity:1;pointer-events:auto}
-.spot{position:relative;z-index:31;box-shadow:0 0 0 4px var(--green),0 20px 60px rgba(0,0,0,.3)!important}
-#tip{position:fixed;width:340px;background:var(--card);border-radius:20px;box-shadow:0 20px 60px rgba(0,0,0,.25);padding:18px;z-index:32;transition:top .4s cubic-bezier(.2,.8,.2,1),left .4s cubic-bezier(.2,.8,.2,1),opacity .3s}
-#tip[hidden]{display:block;opacity:0;pointer-events:none}
-#tip .n{font-size:12px;color:var(--muted)}
-#tip p{margin:6px 0 14px}
-#tip .row{display:flex;gap:8px;justify-content:flex-end}
-#tip .ghost{border:0;background:var(--soft);border-radius:999px;padding:8px 14px;font:inherit;cursor:pointer}
-@media (max-width:1100px),(max-height:640px){html,body{height:auto}.app{height:auto;grid-template-columns:1fr}.side{flex-direction:row;height:auto;position:static;justify-content:center;padding:8px}.side .grow{display:none}.grid{grid-template-columns:1fr;grid-template-rows:auto}.row1,.agent,.flow,.scans,.over{grid-column:auto;grid-row:auto}.row1{grid-template-columns:1fr}#stage{min-height:220px}.tabs{display:none}}
+@media (max-width:1100px){.grid{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:auto}.row1{grid-column:1/-1;min-height:280px}.agent,.flow,.scans,.over{grid-column:auto;grid-row:auto}.flow{grid-column:1/-1;grid-row:2;min-height:380px}.agent{min-height:280px}.over{grid-column:1/-1}.receipt-body{max-height:360px}}
+@media (max-width:720px){.app{padding:14px}.main{grid-template-rows:auto 1fr}.top{flex-wrap:wrap;gap:10px}.tabs{margin-left:auto}.tab{padding:7px 12px}.source{width:100%;text-align:left;margin:0 0 4px}.grid{grid-template-columns:1fr}.row1{grid-template-columns:1fr;background:transparent;box-shadow:none;gap:14px}.mini{padding:18px 20px;min-height:175px}.mini.gray{background:var(--card)}.flow,.over{grid-column:auto;grid-row:auto}#stage{min-height:220px}#gate .box{width:70px;height:76px}.box{width:58px}.scans{min-height:300px}.card{padding:18px 20px}.row1{padding:0}}
+@media (max-width:720px){.guide-pet{left:calc(100vw - 78px);top:calc(100vh - 78px);width:52px;height:52px}.guide-panel{right:14px;bottom:78px}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
 </head>
 <body>
 <div class="app">
-  <nav class="side" aria-label="Sections">
-    <div class="logo">H</div>
-    <button class="ico on" id="navLive" type="button" title="Live overview"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></svg></button>
-    <button class="ico" id="navReceipt" type="button" title="What this task may do"><svg viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg></button>
-    <button class="ico" id="navScans" type="button" title="Semgrep scans"><svg viewBox="0 0 24 24"><path d="M4 19V9M10 19V5M16 19v-7M22 19H2"/></svg></button>
-    <button class="ico" id="navHistory" type="button" title="Every decision (ClickHouse)"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v4h4"/><path d="M12 7v5l3 2"/></svg></button>
-    <div class="grow"></div>
-    <button class="ico" id="navHelp" type="button" title="Tutorial"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6V14"/><path d="M12 17h.01"/></svg></button>
-  </nav>
-
   <div class="main">
     <header class="top">
-      <div class="brand">HOLD<small>Every action the AI takes passes through HOLD first</small></div>
-      <div class="tabs" role="tablist">
-        <button class="tab on" id="tabLive" type="button">Live</button>
-        <button class="tab" id="tabReceipt" type="button">Receipt</button>
-        <button class="tab" id="tabScans" type="button">Scans</button>
-        <button class="tab" id="tabHistory" type="button">History</button>
-      </div>
-      <span class="pill" id="source">connecting...</span>
-      <button class="dark" id="tour" type="button">How it works</button>
+      <div class="brand">HOLD<small>Task permissions, live</small></div>
+      <nav class="tabs" aria-label="Dashboard">
+        <button class="tab on" id="tabLive" type="button" aria-current="page">Overview</button>
+        <button class="tab" id="tabHistory" type="button" aria-controls="drawer" aria-expanded="false">History</button>
+      </nav>
+      <span class="source" id="source" role="status">Connecting…</span>
     </header>
 
     <section class="grid">
       <div class="card row1">
-        <div class="mini gray" id="receipt">
-          <div class="head"><span class="title">Task receipt</span><span class="shield"><svg viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/></svg></span></div>
-          <div id="intent">Loading the task...</div>
-          <div class="chips" id="chips"></div>
-          <div class="foot" id="digest"></div>
+        <div class="mini gray guide-block-target" id="receipt" data-guide="receipt" data-guide-title="Task receipt">
+          <div class="head"><span class="title">Task receipt</span><button class="help" type="button" aria-label="About task receipt" data-help="The permissions approved for this task. HOLD blocks anything outside these limits. Open View permissions for the exact rules."><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/></svg></button></div>
+          <div class="receipt-body">
+            <div id="intent">Loading the task…</div>
+            <dl class="permissions" id="permissionSummary" hidden>
+              <div><dt>Read</dt><dd id="readSummary"></dd></div>
+              <div><dt>Edit</dt><dd id="writeSummary"></dd></div>
+              <div><dt>Network</dt><dd id="networkSummary"></dd></div>
+            </dl>
+            <details class="permission-details" id="permissionDetails" hidden>
+              <summary>View permissions</summary>
+              <div id="permissionRules"></div>
+              <p>Shell and Git commands are disabled. Secrets, Git metadata and CI configuration stay protected.</p>
+              <p id="digest"></p>
+            </details>
+          </div>
         </div>
-        <div class="mini green">
-          <div class="head"><span class="title">Allowed</span><span class="shield"><svg viewBox="0 0 24 24"><path d="M5 12l4 4 10-10"/></svg></span></div>
+        <div class="mini green guide-block-target" data-guide="allowed" data-guide-title="Allowed">
+          <div class="head"><span class="title">Allowed</span><button class="help" type="button" aria-label="About allowed actions" data-help="Actions approved by HOLD within the latest 200 calls. File writes also pass a Semgrep code check before running."><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 12l4 4 10-10"/></svg></button></div>
           <div class="big"><span id="nAllow">0</span><small>calls</small></div>
-          <div class="bar"><i id="allowBar"></i></div>
-          <div class="sub">inside what the developer approved</div>
           <div class="foot"><span id="readsW">0 reads</span><span id="writesW">0 writes</span></div>
         </div>
-        <div class="mini blue">
-          <div class="head"><span class="title">Blocked before running</span><span class="shield"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M6.5 6.5l11 11"/></svg></span></div>
+        <div class="mini blue guide-block-target" data-guide="blocked" data-guide-title="Blocked">
+          <div class="head"><span class="title">Blocked</span><button class="help" type="button" aria-label="About blocked actions" data-help="Actions stopped before running, within the latest 200 calls. HOLD checks task permissions; Semgrep checks proposed code changes."><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M6.5 6.5l11 11"/></svg></button></div>
           <div class="big"><span id="nDeny">0</span><small>calls</small></div>
-          <div class="bar"><i id="denyBar"></i></div>
-          <div class="sub">stopped by the gate or by Semgrep</div>
           <div class="foot"><span id="byGate">0 by the gate</span><span id="bySemgrep">0 by Semgrep</span></div>
         </div>
       </div>
 
-      <div class="card agent" id="agentCard">
+      <div class="card agent guide-block-target" id="agentCard" data-guide="agent" data-guide-title="Agent">
+        <div class="head"><span class="title">Agent</span><button class="help" type="button" aria-label="About the agent" data-help="The agent behind the latest action and its tool usage. Replay scripts are labeled separately from AI agents."><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/></svg></button></div>
         <div class="avatar" id="ring"><span id="initials">AI</span></div>
         <div id="agentName">Waiting for the agent</div>
         <div class="tag" id="lastTag">no actions yet</div>
@@ -173,8 +194,8 @@ tr.bad td{background:#fff5f5}
         <svg id="toolBars" viewBox="0 0 260 110" preserveAspectRatio="none" aria-label="Calls per tool"></svg>
       </div>
 
-      <div class="card flow" id="flow">
-        <div class="head"><span class="title">Live gate</span><span class="sub">each pill is one real tool call</span></div>
+      <div class="card flow guide-block-target" id="flow" data-guide="flow" data-guide-title="Live activity">
+        <div class="head"><span class="title">Live activity</span><button class="help" type="button" aria-label="About live activity" data-help="Watch tool calls pass through HOLD. Green means allowed; red means blocked before execution. The line below shows permission-check time in microseconds."><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3 12h4l3-7 4 14 3-7h4"/></svg></button></div>
         <div id="stage">
           <div class="rail r1"></div><div class="rail r2"></div>
           <div class="node" id="agentN"><div class="box">AI</div><b id="agentShort">Agent</b>asks to act</div>
@@ -182,33 +203,98 @@ tr.bad td{background:#fff5f5}
           <div class="node" id="files"><div class="box">Files</div></div>
           <div class="node" id="net"><div class="box">Network</div></div>
         </div>
-        <div id="caption" aria-live="polite"><div class="h">Waiting for the agent's first action.</div><div class="raw"></div></div>
+        <div id="caption" aria-live="polite"><div class="h">Waiting for the first action.</div></div>
         <svg id="latency" viewBox="0 0 600 64" preserveAspectRatio="none" aria-label="Gate decision time per call"></svg>
       </div>
 
-      <div class="card scans" id="scans">
-        <div class="head"><span class="title">Semgrep write scans</span><span class="badge" id="scanAvg">no scans yet</span></div>
+      <div class="card scans guide-block-target" id="scans" data-guide="scans" data-guide-title="Code checks">
+        <div class="head"><span class="title">Code checks</span><button class="help" type="button" aria-label="About code checks" data-help="Semgrep scans permitted file changes for new risky calls. Bars show the latest eight scan times: green passed, red blocked. The count covers the latest 200 calls."><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m8 6-6 6 6 6m8-12 6 6-6 6m-3-15-2 18"/></svg></button></div>
         <div class="big"><span id="nScan">0</span><small>scans</small></div>
-        <div class="sub">seconds per scan · green = clean, red = blocked</div>
+        <div class="sub" id="scanAvg">No scans yet</div>
         <svg id="scanBars" viewBox="0 0 300 160" preserveAspectRatio="none" aria-label="Semgrep scan times"></svg>
       </div>
 
-      <div class="card over" id="overview">
-        <div class="head"><span class="title">Overview</span><span class="sub" id="p50">gate p50 -</span></div>
+      <div class="card over guide-block-target" id="overview" data-guide="overview" data-guide-title="Decisions">
+        <div class="head"><span class="title">Decisions</span><button class="help" type="button" aria-label="About decisions" data-help="The split of allowed actions and blocks in the latest 200 calls. Permission blocks come from HOLD; code blocks come from Semgrep. Open History for individual decisions."><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 3v9h9M9 3.5a9 9 0 1 0 11.5 11.5"/></svg></button></div>
         <svg id="donut" viewBox="0 0 140 140" aria-label="Decisions overview"></svg>
-        <div class="legend"><span><i class="lgA"></i>Allowed</span><span><i class="lgG"></i>Gate block</span><span><i class="lgS"></i>Semgrep block</span></div>
+        <div class="legend"><span><i class="lgA"></i>Allowed</span><span><i class="lgG"></i>Permission block</span><span><i class="lgS"></i>Code block</span></div>
       </div>
     </section>
   </div>
 </div>
 
-<aside id="drawer" aria-label="Every decision">
-  <div class="head"><span class="title">Every decision (one row each in ClickHouse)</span><button class="dark" id="closeDrawer" type="button">Close</button></div>
-  <div class="tablewrap"><table><thead><tr><th>Time (UTC)</th><th>Who</th><th>Tool</th><th>Target</th><th>Decision</th><th>Why</th></tr></thead><tbody id="rows"></tbody></table></div>
+<aside id="drawer" role="dialog" aria-modal="true" aria-label="Decision history" inert>
+  <div class="head"><span class="title">History</span><button class="dark" id="closeDrawer" type="button">Close</button><button class="help" type="button" aria-label="About history" data-help="The latest 200 decisions for this task, newest first. Each row shows who acted, what was requested, and why HOLD allowed or blocked it."><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7M3 4v4h4m5-1v5l3 2"/></svg></button></div>
+  <div class="tablewrap" tabindex="0" role="region" aria-label="Decision history table"><table><thead><tr><th>Time (UTC)</th><th>Who</th><th>Tool</th><th>Target</th><th>Decision</th><th>Why</th></tr></thead><tbody id="rows"></tbody></table></div>
 </aside>
 
-<div id="coach"></div>
-<div id="tip" hidden><div class="n" id="tipStep"></div><p id="tipText"></p><div class="row"><button class="ghost" id="tipSkip" type="button">Skip</button><button class="dark" id="tipNext" type="button">Next</button></div></div>
+<button class="guide-pet" id="guidePet" type="button" aria-label="Hold Copilot powered by Guild.ai" aria-expanded="false" aria-controls="guidePanel">
+  <div class="puppet-stage" aria-hidden="true">
+    <svg class="puppet-svg" viewBox="0 0 54 54" width="50" height="50">
+      <!-- Puppet ears with soft inner folds -->
+      <circle cx="14" cy="15" r="5.5" fill="#7fd1a5" />
+      <circle cx="14" cy="15" r="3" fill="#edf7f1" />
+      <circle cx="40" cy="15" r="5.5" fill="#7fd1a5" />
+      <circle cx="40" cy="15" r="3" fill="#edf7f1" />
+      <!-- Antenna tuft with pom-pom -->
+      <path d="M27 12 Q27 6 31 5" fill="none" stroke="#238052" stroke-width="2" stroke-linecap="round" />
+      <circle cx="31.5" cy="5" r="3" fill="#238052" />
+      <!-- Rounded puppet head -->
+      <rect x="11" y="11" width="32" height="30" rx="15" fill="#ffffff" stroke="#e6e9ef" stroke-width="1.5" />
+      <!-- Stitched forehead seam -->
+      <path d="M27 12 L27 19" stroke="#7fd1a5" stroke-width="1.5" stroke-dasharray="2,2" stroke-linecap="round" />
+      <!-- Rosy puppet cheeks -->
+      <circle cx="17" cy="29" r="3.2" fill="#ffb3ba" opacity="0.85" />
+      <circle cx="37" cy="29" r="3.2" fill="#ffb3ba" opacity="0.85" />
+      <!-- Expressive eyes with specular highlight and blinking animation -->
+      <g class="puppet-eyes">
+        <circle cx="21" cy="25" r="3.5" fill="#1c2027" />
+        <circle cx="20" cy="24" r="1.2" fill="#ffffff" />
+        <circle cx="33" cy="25" r="3.5" fill="#1c2027" />
+        <circle cx="32" cy="24" r="1.2" fill="#ffffff" />
+      </g>
+      <!-- Stitched smile -->
+      <path d="M24 31 Q27 34.5 30 31" fill="none" stroke="#1c2027" stroke-width="1.8" stroke-linecap="round" />
+      <!-- Little collar bowtie -->
+      <path d="M23 41 L27 43 L31 41 L27 45 Z" fill="#238052" />
+      <circle cx="27" cy="42" r="1.5" fill="#7fd1a5" />
+    </svg>
+    <span class="puppet-badge">Copilot</span>
+  </div>
+</button>
+<section class="guide-panel" id="guidePanel" aria-label="Hold Copilot" hidden>
+  <div class="guide-head">
+    <div class="guide-avatar" aria-hidden="true">
+      <svg viewBox="0 0 54 54" width="30" height="30">
+        <circle cx="14" cy="15" r="5.5" fill="#7fd1a5" />
+        <circle cx="40" cy="15" r="5.5" fill="#7fd1a5" />
+        <rect x="11" y="11" width="32" height="30" rx="15" fill="#edf7f1" />
+        <circle cx="17" cy="29" r="3" fill="#ffb3ba" opacity="0.85" />
+        <circle cx="37" cy="29" r="3" fill="#ffb3ba" opacity="0.85" />
+        <circle cx="21" cy="25" r="3" fill="#1c2027" />
+        <circle cx="33" cy="25" r="3" fill="#1c2027" />
+        <path d="M24 31 Q27 34 30 31" fill="none" stroke="#1c2027" stroke-width="1.8" stroke-linecap="round" />
+      </svg>
+    </div>
+    <div class="guide-meta">
+      <div class="guide-title-row">
+        <span class="guide-title">Hold Copilot</span>
+        <span class="guild-badge">powered by <a href="https://guild.ai" target="_blank" rel="noopener">Guild.ai</a></span>
+      </div>
+      <div class="guide-block" id="guideBlock">Click any block to inspect</div>
+    </div>
+    <button class="guide-close" id="guideClose" type="button" aria-label="Close Hold Copilot">&times;</button>
+  </div>
+  <div class="guide-log" id="guideLog" aria-live="polite"></div>
+  <form class="guide-form" id="guideForm">
+    <input id="guideInput" name="message" autocomplete="off" maxlength="1000" placeholder="Ask Hold Copilot about this block...">
+    <button type="submit" aria-label="Send message">
+      <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+    </button>
+  </form>
+</section>
+
+<div id="blockHelp" role="tooltip" hidden></div>
 
 <script>
 "use strict";
@@ -222,6 +308,7 @@ const params = new URLSearchParams(location.search);
 let task = params.get("task") || "";
 const seen = new Set(), queue = [];
 let firstLoad = true, playing = false, lastSig = "";
+let currentBlock = "overview", currentBlockTitle = "Decisions", lastEvents = [];
 
 const AGENTS = { "claude-code": ["Claude Code", "CC"], "scripted-replay": ["Replay script", "RS"] };
 const who = (id) => (AGENTS[id] || [id])[0];
@@ -252,13 +339,14 @@ function explain(e) {
 function caption(e) {
   const [head, cls] = explain(e), box = $("caption");
   box.className = cls;
-  box.replaceChildren(make("div", head, "h"), make("div", who(e.agent_id) + (e.agent_id === "scripted-replay" ? " (scripted, not the AI model)" : "") + " · " + e.tool_name + " · raw: " + e.reason, "raw"));
+  box.replaceChildren(make("div", head, "h"));
 }
 
 function setAgent(e) {
   setText($("agentName"), who(e.agent_id)); setText($("agentShort"), who(e.agent_id)); setText($("initials"), initials(e.agent_id));
   const tag = $("lastTag"); setText(tag, e.decision === "ALLOW" ? "last action allowed" : "last action blocked"); tag.className = "tag" + (e.decision === "ALLOW" ? "" : " bad");
   setText($("lastAct"), e.tool_name + " " + (e.target || "") + (e.agent_id === "scripted-replay" ? " · scripted, not the AI" : ""));
+  $("lastAct").title = $("lastAct").textContent;
 }
 
 const wait = (ms) => new Promise((ok) => setTimeout(ok, ms));
@@ -325,10 +413,10 @@ function area(values) {
   defs.append(g); svg.append(defs);
   svg.append(sv("path", { d: d + " L" + w + "," + h + " L0," + h + " Z", fill: "url(#lg)" }));
   svg.append(sv("path", { d, fill: "none", stroke: "#3fae74", "stroke-width": 2 }, "draw"));
-  const lab = sv("text", { x: 4, y: 12, "font-size": 11, fill: "#7b8494" }); setText(lab, "gate decision time per call (µs), oldest → newest"); svg.append(lab);
 }
 
 function render(events) {
+  lastEvents = events;
   const sig = events.length + "|" + (events[0] ? key(events[0]) : ""); if (sig === lastSig) return; lastSig = sig;
   let a = 0, g = 0, s = 0, reads = 0, writes = 0;
   const tools = {};
@@ -336,11 +424,8 @@ function render(events) {
     if (e.decision === "ALLOW") { a++; if (e.sink === "FS_READ") reads++; if (e.sink === "FS_WRITE") writes++; } else if (bySemgrep(e)) s++; else g++;
     tools[e.tool_name] = tools[e.tool_name] || { ok: 0, bad: 0 }; tools[e.tool_name][e.decision === "ALLOW" ? "ok" : "bad"]++;
   }
-  const total = a + g + s;
   countTo($("nAllow"), a); countTo($("nDeny"), g + s);
-  $("allowBar").style.width = (total ? (a / total) * 100 : 0) + "%"; $("denyBar").style.width = (total ? ((g + s) / total) * 100 : 0) + "%";
-  setText($("readsW"), reads + " reads"); setText($("writesW"), writes + " writes"); setText($("byGate"), g + " by the gate"); setText($("bySemgrep"), s + " by Semgrep");
-  $("ring").style.background = "conic-gradient(#7fd1a5 " + (total ? (a / total) * 360 : 0) + "deg, #f2b8ba 0)";
+  setText($("readsW"), reads + " reads"); setText($("writesW"), writes + " writes"); setText($("byGate"), g + " permission"); setText($("bySemgrep"), s + " code");
   donut(a, g, s);
   const toolItems = [];
   for (const [name, c] of Object.entries(tools)) {
@@ -352,7 +437,7 @@ function render(events) {
   const allScans = events.filter((e) => scanMs(e) !== null), scans = allScans.slice(0, 8).reverse();
   countTo($("nScan"), allScans.length);
   bars($("scanBars"), scans.map((e) => ({ l: e.ts.slice(11, 16), v: scanMs(e) / 1000, c: e.decision === "ALLOW" ? "#7fd1a5" : "#e5484d" })), 300, 160, (v) => v.toFixed(1) + "s");
-  if (scans.length) setText($("scanAvg"), "avg " + (scans.reduce((x, e) => x + scanMs(e), 0) / scans.length / 1000).toFixed(1) + " s");
+  setText($("scanAvg"), scans.length ? (scans.reduce((x, e) => x + scanMs(e), 0) / scans.length / 1000).toFixed(1) + " s average" : "No scans yet");
   area(events.slice(0, 40).reverse().map((e) => e.gate_us));
   const rows = [];
   for (const e of events) {
@@ -361,80 +446,231 @@ function render(events) {
     tr.append(make("td", e.ts.slice(11, 19), "mono"), w, make("td", e.tool_name, "mono"), make("td", e.target, "mono"), make("td", e.decision), make("td", explain(e)[0]));
     rows.push(tr);
   }
+  if (!rows.length) { const row = make("tr"), cell = make("td", "No decisions yet."); cell.colSpan = 6; row.append(cell); rows.push(row); }
   $("rows").replaceChildren(...rows);
 }
 
 async function getJSON(path) { const r = await fetch(path, { cache: "no-store" }); const body = await r.json(); if (!r.ok) throw new Error(body.error || ("HTTP " + r.status)); return body; }
+async function postJSON(path, payload) {
+  const r = await fetch(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+  const body = await r.json();
+  if (!r.ok) throw new Error(body.detail || body.error || ("HTTP " + r.status));
+  return body;
+}
 
 async function loadReceipt() {
   try {
     const rc = await getJSON("/api/receipt");
     if (!task) task = rc.task_id;
     setText($("intent"), rc.intent);
-    const chips = [];
-    for (const p of rc.read) chips.push(make("span", "✓ read " + p, "chip yes"));
-    for (const p of rc.write) chips.push(make("span", "✓ write " + p, "chip yes"));
-    if (rc.network_egress) for (const h of rc.host_allowlist) chips.push(make("span", "✓ net " + h, "chip yes"));
-    else chips.push(make("span", "✗ no network", "chip no"));
-    chips.push(make("span", "✗ no shell / git", "chip no"), make("span", "✗ secrets, .git, CI", "chip no"));
-    $("chips").replaceChildren(...chips);
-    setText($("digest"), "digest " + rc.digest_prefix + "… (identifies the policy; not a signature)");
+    const summarize = (paths) => !paths.length ? "Not allowed" : paths.length === 1 ? paths[0] : paths.length + " approved paths";
+    setText($("readSummary"), summarize(rc.read));
+    setText($("writeSummary"), summarize(rc.write));
+    const hosts = rc.network_egress ? rc.host_allowlist : [];
+    setText($("networkSummary"), !hosts.length ? "Blocked" : hosts.length === 1 ? hosts[0] : hosts.length + " approved hosts");
+    const groups = [];
+    for (const [label, paths] of [["Read access", rc.read], ["Edit access", rc.write], ["Network access", hosts]]) {
+      const group = make("div", undefined, "permission-group"), list = make("ul");
+      group.append(make("h3", label));
+      for (const path of paths.length ? paths : ["Not allowed"]) list.append(make("li", path));
+      group.append(list); groups.push(group);
+    }
+    $("permissionRules").replaceChildren(...groups);
+    setText($("digest"), "Policy ID: " + rc.digest_prefix + "… · Identifies these rules; not a signature.");
+    $("permissionSummary").hidden = false;
+    $("permissionDetails").hidden = false;
   } catch (err) { setText($("intent"), "Receipt not available: " + err.message); }
 }
 
 async function poll() {
   try {
     if (!task) { const h = await getJSON("/api/health"); task = h.default_task; }
-    const [ev, sm] = await Promise.all([getJSON("/api/events?task=" + encodeURIComponent(task) + "&limit=200"), getJSON("/api/summary?task=" + encodeURIComponent(task))]);
-    setText($("source"), ev.source_label + " · " + task);
+    const ev = await getJSON("/api/events?task=" + encodeURIComponent(task) + "&limit=200");
+    setText($("source"), (ev.source === "jsonl" ? "Local audit log" : "ClickHouse") + " · " + task);
+    $("source").title = ev.source_label;
     const fresh = [];
     for (const e of ev.events.slice().reverse()) { const k = key(e); if (!seen.has(k)) { seen.add(k); fresh.push(e); } }
     if (!firstLoad) { queue.push(...fresh); play(); } else if (ev.events.length) { caption(ev.events[0]); setAgent(ev.events[0]); }
     firstLoad = false;
     render(ev.events);
-    let best = null; for (const row of sm.summary || []) if (!best || row.calls > best.calls) best = row;
-    setText($("p50"), best ? "gate p50 " + best.p50_us + " µs" : "gate p50 -");
   } catch (err) { setText($("source"), "Not connected: " + err.message); }
   setTimeout(poll, 1000);
 }
 
-function focusCard(id) { const el = $(id); el.classList.add("spot"); setTimeout(() => el.classList.remove("spot"), 1400); }
-function selectTab(name) {
-  for (const t of ["Live", "Receipt", "Scans", "History"]) { $("tab" + t).classList.toggle("on", t === name); $("nav" + t).classList.toggle("on", t === name); }
-  $("drawer").classList.toggle("open", name === "History");
-  if (name === "Receipt") focusCard("receipt");
-  if (name === "Scans") focusCard("scans");
+const helpTip = $("blockHelp");
+let helpButton = null, helpPinned = false, helpTimer;
+function hideHelp() {
+  clearTimeout(helpTimer);
+  if (helpButton) { helpButton.removeAttribute("aria-describedby"); helpButton.setAttribute("aria-expanded", "false"); }
+  helpTip.hidden = true; helpButton = null; helpPinned = false;
 }
-for (const t of ["Live", "Receipt", "Scans", "History"]) { $("tab" + t).addEventListener("click", () => selectTab(t)); $("nav" + t).addEventListener("click", () => selectTab(t)); }
-$("closeDrawer").addEventListener("click", () => selectTab("Live"));
+function showHelp(button) {
+  if (helpButton !== button) hideHelp();
+  clearTimeout(helpTimer); helpButton = button;
+  setText(helpTip, button.dataset.help); helpTip.hidden = false;
+  button.setAttribute("aria-describedby", "blockHelp"); button.setAttribute("aria-expanded", "true");
+  const box = button.getBoundingClientRect(), tip = helpTip.getBoundingClientRect();
+  helpTip.style.left = Math.max(12, Math.min(innerWidth - tip.width - 12, box.right - tip.width)) + "px";
+  helpTip.style.top = Math.max(12, box.bottom + tip.height + 20 <= innerHeight ? box.bottom + 8 : box.top - tip.height - 8) + "px";
+}
+function leaveHelp() {
+  if (!helpPinned && document.activeElement !== helpButton) helpTimer = setTimeout(hideHelp, 120);
+}
+for (const button of document.querySelectorAll(".help")) {
+  button.setAttribute("aria-expanded", "false");
+  button.addEventListener("pointerenter", () => showHelp(button));
+  button.addEventListener("pointerleave", leaveHelp);
+  button.addEventListener("focus", () => showHelp(button));
+  button.addEventListener("blur", hideHelp);
+  button.addEventListener("click", () => {
+    if (helpButton === button && helpPinned) hideHelp();
+    else { showHelp(button); helpPinned = true; }
+  });
+}
+helpTip.addEventListener("pointerenter", () => clearTimeout(helpTimer));
+helpTip.addEventListener("pointerleave", leaveHelp);
+document.addEventListener("pointerdown", (event) => {
+  if (!event.target.closest(".help") && !helpTip.contains(event.target)) hideHelp();
+});
+window.addEventListener("resize", hideHelp);
+document.addEventListener("scroll", hideHelp, true);
 
-const STEPS = [
-  ["receipt", "This is what the developer approved for this task. Anything outside it is refused."],
-  ["flow", "Every action the AI takes travels through the HOLD gate. Green passes. Red is stopped before it runs."],
-  ["scans", "Every allowed write is scanned by Semgrep first. New network, process or eval code is refused."],
-  ["overview", "The totals, live. Every decision is also a row in ClickHouse: open History in the sidebar."],
-];
-let stepIndex = 0;
-function showStep() {
-  document.querySelectorAll(".spot").forEach((n) => n.classList.remove("spot"));
-  const tip = $("tip");
-  if (stepIndex >= STEPS.length) { $("coach").classList.remove("open"); tip.hidden = true; try { localStorage.setItem("hold-tour-v2", "1"); } catch (e) {} return; }
-  const [id, text] = STEPS[stepIndex], target = $(id); target.classList.add("spot");
-  const box = target.getBoundingClientRect();
-  setText($("tipStep"), "Step " + (stepIndex + 1) + " of " + STEPS.length); setText($("tipText"), text);
-  setText($("tipNext"), stepIndex === STEPS.length - 1 ? "Done" : "Next");
-  tip.hidden = false;
-  const below = box.bottom + 14, top = below + 170 < innerHeight ? below : Math.max(14, box.top - 180);
-  tip.style.top = top + "px"; tip.style.left = Math.max(14, Math.min(innerWidth - 354, box.left)) + "px";
+const BLOCK_HELP = {
+  receipt: "👋 Hi! I'm Hold Copilot, powered by Guild.ai. This is the Task Receipt block—the developer-approved capability contract. It strictly defines what files this task may read, edit, or network hosts it may contact. Anything outside this receipt is blocked.",
+  allowed: "👋 Here in the Allowed block, you can see all tool calls that strictly matched the receipt policy and were dispatched. File writes also passed Semgrep AST code checks before modifying disk.",
+  blocked: "👋 This is the Blocked block. It tallies all calls HOLD terminated before execution—preventing unauthorized file reads, path traversal, network exfiltration, and code injection.",
+  agent: "👋 This is the Agent block. It tracks the AI agent (e.g. Claude Code) executing the task, its recent actions, and tool usage distribution.",
+  flow: "👋 Live Activity tracks each tool call through HOLD's deterministic gate in real time. Green pulses pass; red pulses are stopped cold before dispatch.",
+  scans: "👋 Code Checks displays real-time Semgrep differential scans. Even if a write is permitted by receipt, Semgrep scans it first for dangerous new network or execution sinks.",
+  overview: "👋 Decisions provides an aggregate overview of allowed vs. blocked operations across the task lifecycle.",
+  history: "👋 History logs every single gate decision, timestamp, tool, target, and exact reason for complete queryable auditability."
+};
+function guideContext() {
+  const latest = lastEvents[0] || {};
+  return {
+    task,
+    block: currentBlock,
+    latest_decision: latest.decision || "",
+    latest_tool: latest.tool_name || "",
+    latest_target: latest.target || "",
+    latest_reason: latest.reason || "",
+    allowed: Number($("nAllow").textContent) || 0,
+    blocked: Number($("nDeny").textContent) || 0,
+    scans: Number($("nScan").textContent) || 0,
+  };
 }
-function startTour() { stepIndex = 0; $("coach").classList.add("open"); showStep(); }
-$("tipNext").addEventListener("click", () => { stepIndex++; showStep(); });
-$("tipSkip").addEventListener("click", () => { stepIndex = STEPS.length; showStep(); });
-$("tour").addEventListener("click", startTour); $("navHelp").addEventListener("click", startTour);
+function addGuideMessage(text, whoClass) {
+  const msg = make("div", text, "msg " + whoClass);
+  $("guideLog").append(msg);
+  $("guideLog").scrollTop = $("guideLog").scrollHeight;
+}
+function positionPanelNear(target) {
+  const panel = $("guidePanel"), box = target.getBoundingClientRect();
+  const pWidth = Math.min(360, innerWidth - 28);
+  const pHeight = Math.min(480, innerHeight - 120);
+
+  let left = box.right - pWidth;
+  if (left < 14) left = 14;
+  if (left + pWidth > innerWidth - 14) left = innerWidth - pWidth - 14;
+
+  let top = box.bottom + 12;
+  if (top + pHeight > innerHeight - 16) {
+    if (box.top - pHeight - 12 >= 14) {
+      top = box.top - pHeight - 12;
+    } else {
+      top = Math.max(14, innerHeight - pHeight - 16);
+    }
+  }
+  panel.style.left = Math.round(left) + "px";
+  panel.style.top = Math.round(top) + "px";
+}
+function moveGuideTo(target) {
+  const pet = $("guidePet"), box = target.getBoundingClientRect();
+  const size = pet.offsetWidth || 66;
+  const left = Math.max(12, Math.min(innerWidth - size - 12, box.right - size + 10));
+  const top = Math.max(12, Math.min(innerHeight - size - 12, box.top - 18));
+  pet.style.left = Math.round(left) + "px";
+  pet.style.top = Math.round(top) + "px";
+  pet.classList.remove("bounce");
+  void pet.offsetWidth;
+  pet.classList.add("bounce");
+  positionPanelNear(target);
+}
+function openGuide(target, seed) {
+  currentBlock = target.dataset.guide || "overview";
+  currentBlockTitle = target.dataset.guideTitle || "Dashboard";
+  setText($("guideBlock"), currentBlockTitle);
+  moveGuideTo(target);
+  $("guidePanel").hidden = false;
+  $("guidePet").setAttribute("aria-expanded", "true");
+  if (seed && !$("guideLog").childElementCount) addGuideMessage(BLOCK_HELP[currentBlock] || BLOCK_HELP.overview, "bot");
+}
+function closeGuide() {
+  $("guidePanel").hidden = true;
+  $("guidePet").setAttribute("aria-expanded", "false");
+}
+for (const target of document.querySelectorAll(".guide-block-target")) {
+  target.addEventListener("click", (event) => {
+    if (event.target.closest("button, summary, details, a, input")) return;
+    $("guideLog").replaceChildren();
+    openGuide(target, true);
+  });
+}
+$("guidePet").addEventListener("click", () => {
+  const selected = document.querySelector('[data-guide="' + currentBlock + '"]') || $("overview");
+  if ($("guidePanel").hidden) openGuide(selected, !$("guideLog").childElementCount);
+  else closeGuide();
+});
+$("guideClose").addEventListener("click", closeGuide);
+$("guideForm").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const input = $("guideInput"), message = input.value.trim();
+  if (!message) return;
+  input.value = "";
+  addGuideMessage(message, "user");
+  addGuideMessage("Thinking...", "bot");
+  const pending = $("guideLog").lastElementChild;
+  try {
+    const response = await postJSON("/api/chat", { block: currentBlock, message, context: guideContext() });
+    setText(pending, response.answer || "No answer returned.");
+  } catch (err) {
+    setText(pending, "I could not reach the guide agent: " + err.message);
+  }
+});
+window.addEventListener("resize", () => {
+  const selected = document.querySelector('[data-guide="' + currentBlock + '"]');
+  if (selected) moveGuideTo(selected);
+});
+
+function showHistory(open) {
+  hideHelp();
+  $("drawer").inert = !open;
+  $("drawer").classList.toggle("open", open);
+  document.querySelector(".app").inert = open;
+  $("tabHistory").setAttribute("aria-expanded", String(open));
+  (open ? $("closeDrawer") : $("tabHistory")).focus();
+  if (open) {
+    currentBlock = "history";
+    currentBlockTitle = "History";
+    setText($("guideBlock"), currentBlockTitle);
+  }
+}
+$("tabLive").addEventListener("click", () => showHistory(false));
+$("tabHistory").addEventListener("click", () => showHistory(true));
+$("closeDrawer").addEventListener("click", () => showHistory(false));
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") {
+    if (helpButton) hideHelp();
+    else if (!$("drawer").inert) showHistory(false);
+  }
+  if (event.key === "Tab" && !$("drawer").inert) {
+    const controls = $("drawer").querySelectorAll("button, [tabindex='0']"), first = controls[0], last = controls[controls.length - 1];
+    if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+    else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+  }
+});
 
 loadReceipt().then(poll);
-let done = false; try { done = localStorage.getItem("hold-tour-v2") === "1"; } catch (e) {}
-if (!done) setTimeout(startTour, 800);
 </script>
 </body>
 </html>

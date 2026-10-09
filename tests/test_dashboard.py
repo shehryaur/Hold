@@ -72,6 +72,18 @@ def request(port, path, headers=None):
         conn.close()
 
 
+def post_json(port, path, payload, headers=None):
+    body = json.dumps(payload).encode("utf-8")
+    request_headers = {"Content-Type": "application/json", **(headers or {})}
+    conn = http.client.HTTPConnection("127.0.0.1", port, timeout=10)
+    try:
+        conn.request("POST", path, body=body, headers=request_headers)
+        resp = conn.getresponse()
+        return resp.status, dict(resp.getheaders()), json.loads(resp.read())
+    finally:
+        conn.close()
+
+
 def get_json(port, path):
     status, headers, body = request(port, path)
     return status, headers, json.loads(body)
@@ -282,6 +294,30 @@ class JsonlModeProcess(unittest.TestCase):
         for path in ("/", "/api/health", f"/api/events?task={TASK}", f"/api/summary?task={TASK}", "/nope"):
             _, headers, body = request(self.server.port, path)
             self.assertNotIn(SENTINEL_PASSWORD.encode(), body + json.dumps(headers).encode(), path)
+
+    def test_chat_fallback_explains_a_block_without_credentials(self):
+        status, headers, body = post_json(self.server.port, "/api/chat", {
+            "block": "receipt",
+            "message": "What can this task edit?",
+            "context": {"task": TASK},
+        })
+        self.assertEqual(status, 200, body)
+        self.assertTrue(headers["Content-Type"].startswith("application/json"))
+        self.assertEqual(body["source"], "local")
+        self.assertIn("Task receipt", body["answer"])
+        self.assertIn(TASK, body["answer"])
+        self.assertNotIn(SENTINEL_PASSWORD, json.dumps(body))
+
+    def test_chat_rejects_bad_posts(self):
+        status, _, body = post_json(self.server.port, "/api/nope", {"message": "hi"})
+        self.assertEqual(status, 404, body)
+        conn = http.client.HTTPConnection("127.0.0.1", self.server.port, timeout=10)
+        try:
+            conn.request("POST", "/api/chat", body=b"{}", headers={"Content-Type": "text/plain"})
+            resp = conn.getresponse()
+            self.assertEqual(resp.status, 415)
+        finally:
+            conn.close()
 
     def test_foreign_host_header_is_refused(self):
         status, _, body = request(self.server.port, "/api/health", {"Host": "rebind.example"})

@@ -57,7 +57,9 @@ TOOL_NAMES = ("read_file", "write_file", "fetch_url")
 INSTRUCTIONS = (
     "HOLD is a task-scoped tool gateway. File paths are relative to the task workspace "
     "(for example 'src/flask/app.py'). Only the files and hosts the developer approved "
-    "for this task can be used; any other call returns an error that states the reason."
+    "for this task can be used; any other call returns an error that states the reason. "
+    "To work in a large repository: search_code to find code, read_lines to read it, "
+    "edit_file to change a few lines."
 )
 
 
@@ -212,6 +214,43 @@ def create_server(gateway: Gateway) -> HoldMCP:
         error that states the reason.
         """
         return mcp.run_gateway("fetch_url", {"url": url})
+
+    @mcp.tool()
+    def list_files(path: str) -> CallToolResult:
+        """List files under a workspace-relative folder ('.' for the whole workspace).
+
+        Only files approved for reading in this task are listed; protected files and
+        folders (secrets, .git, CI config) never appear.
+        """
+        return mcp.run_gateway("list_files", {"path": path})
+
+    @mcp.tool()
+    def search_code(query: str) -> CallToolResult:
+        """Find a literal, case-sensitive string in the files approved for reading in this task.
+
+        Returns up to 60 matches as 'path:line: text'. Use it to locate code before
+        reading it with read_lines.
+        """
+        return mcp.run_gateway("search_code", {"query": query})
+
+    @mcp.tool()
+    def read_lines(path: str, start_line: int, end_line: int) -> CallToolResult:
+        """Read lines start_line..end_line (1-based, inclusive, at most 400) of a file.
+
+        `path` is workspace-relative. Only files approved for reading in this task work.
+        Prefer this over read_file for large files.
+        """
+        return mcp.run_gateway("read_lines", {"path": path, "start_line": start_line, "end_line": end_line})
+
+    @mcp.tool()
+    def edit_file(path: str, old_text: str, new_text: str) -> CallToolResult:
+        """Replace exactly one occurrence of old_text with new_text in a file.
+
+        `path` is workspace-relative and must be approved for writing in this task.
+        old_text must appear exactly once: include a few surrounding lines. The resulting
+        file is scanned before it is written, like write_file.
+        """
+        return mcp.run_gateway("edit_file", {"path": path, "old_text": old_text, "new_text": new_text})
 
     return mcp
 

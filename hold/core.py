@@ -144,8 +144,21 @@ TOOL_SCHEMAS: Dict[str, Dict[str, type]] = {
     "read_file": {"path": str},
     "write_file": {"path": str, "content": str},
     "fetch_url": {"url": str},
+    # Real-repo navigation and editing. Same gate, same protected files, same audit.
+    "list_files": {"path": str},
+    "search_code": {"query": str},
+    "read_lines": {"path": str, "start_line": int, "end_line": int},
+    "edit_file": {"path": str, "old_text": str, "new_text": str},
 }
-SINKS = {"read_file": "FS_READ", "write_file": "FS_WRITE", "fetch_url": "NETWORK_EGRESS"}
+SINKS = {"read_file": "FS_READ", "write_file": "FS_WRITE", "fetch_url": "NETWORK_EGRESS",
+         "list_files": "FS_READ", "search_code": "FS_READ", "read_lines": "FS_READ", "edit_file": "FS_WRITE"}
+WRITE_TOOLS = ("write_file", "edit_file")
+# Folders never walked by list_files/search_code (besides protected ones such as .git).
+SKIP_DIRS = {"node_modules", ".venv", "venv", "__pycache__", ".tox", ".mypy_cache", ".pytest_cache", ".ruff_cache"}
+MAX_LIST_ENTRIES = 300
+MAX_SEARCH_MATCHES = 60
+MAX_SEARCH_FILES = 4000
+MAX_READ_LINES = 400
 # Names that are not offered at all; mapped only so telemetry can categorize attempts.
 UNOFFERED_SINKS = {
     "bash": "SHELL_EXEC", "bash_exec": "SHELL_EXEC", "run_command": "SHELL_EXEC",
@@ -202,11 +215,38 @@ class CapabilityGate:
                          f"tool '{name[:80]}' is not offered by HOLD")
         sink = SINKS[name]
         if (not isinstance(args, dict) or set(args) != set(schema)
-                or any(not isinstance(args[k], t) for k, t in schema.items())):
+                or any(not isinstance(args[k], t) or (t is int and isinstance(args[k], bool))
+                       for k, t in schema.items())):
             return _deny(sink, "", f"arguments do not match the {name} schema {sorted(schema)}")
         if name == "fetch_url":
             return self._check_url(args["url"])
-        return self._check_path(args["path"], write=(name == "write_file"), sink=sink)
+        if name == "search_code":
+            q = args["query"]
+            if not 0 < len(q) <= 200 or "\x00" in q:
+                return _deny(sink, "(search)", "query must be 1 to 200 characters")
+            return GateDecision(True, sink, "(search)", "within receipt (only files this task may read are searched)")
+        if name == "list_files":
+            return self._check_dir(args["path"], sink)
+        return self._check_path(args["path"], write=(name in WRITE_TOOLS), sink=sink)
+
+    def _check_dir(self, raw: str, sink: str) -> GateDecision:
+        """A folder to list: same path syntax and containment rules as files. Which files are
+        shown is decided per file by the read rules (see Gateway._readable_files)."""
+        if raw.startswith("/"):
+            return _deny(sink, raw[:120], "absolute paths are not allowed; use workspace-relative paths")
+        rel = raw.rstrip("/")
+        if rel in ("", "."):
+            return GateDecision(True, sink, "./", "within receipt (only readable files are listed)",
+                                resolved_path=self.receipt.workspace_root)
+        if not _SAFE_PATH.match(rel) or any(p in ("", ".", "..") or p.endswith(".") for p in rel.split("/")):
+            return _deny(sink, raw[:120], "folder path is not a canonical workspace-relative path")
+        root = self.receipt.workspace_root
+        real = Path(os.path.realpath(root.joinpath(*rel.split("/"))))
+        if real != root and root not in real.parents:
+            return _deny(sink, rel, "folder resolves outside the workspace")
+        if self._is_protected(rel + "/x"):
+            return _deny(sink, rel, f"protected folder '{rel}'")
+        return GateDecision(True, sink, rel + "/", "within receipt (only readable files are listed)", resolved_path=real)
 
     def _is_protected(self, rel: str) -> bool:
         return any(p.match(rel) for p in self._protected)
@@ -449,13 +489,23 @@ class Gateway:
         decision = self.gate.evaluate(tool, args)
         # `shown` goes to the agent; `reason` goes to telemetry (adds the scan time).
         allowed, shown, reason = decision.allowed, decision.reason, decision.reason
-        if allowed and tool == "write_file" and self.write_scanner is not None:
+        edit_error = None
+        if allowed and tool == "edit_file":
+            # An edit becomes a full proposed file, which then takes the exact write_file path.
+            try:
+                args = {"path": args["path"], "content": self._apply_edit(args, decision)}
+            except Exception as exc:
+                edit_error = f"edit not applied: {exc}"
+                reason = f"{decision.reason}; {edit_error}"
+        if allowed and edit_error is None and tool in WRITE_TOOLS and self.write_scanner is not None:
             allowed, shown, scan_ms = self._scan_write(args, decision)
             reason = f"{shown} (scan {scan_ms:.0f} ms)"
             if allowed:
                 reason = f"{decision.reason}; {reason}"
         if not allowed:
             result, status = ToolResult(True, f"HOLD denied {tool}: {shown}"), "not_run"
+        elif edit_error is not None:
+            result, status = ToolResult(True, f"{tool} failed: {edit_error}"), "error"
         else:
             try:
                 result, status = ToolResult(False, self._execute(tool, args, decision)), "ok"
@@ -524,9 +574,68 @@ class Gateway:
         with os.fdopen(fd, "rb") as f:
             return f.read(MAX_READ_BYTES).decode("utf-8", errors="replace")
 
+    def _apply_edit(self, args: Dict[str, Any], decision: GateDecision) -> str:
+        """Return the file's new content with exactly one occurrence of old_text replaced."""
+        path = decision.resolved_path
+        if path is None or not path.is_file():
+            raise ValueError("file does not exist; use write_file to create it")
+        if path.stat().st_size > MAX_READ_BYTES:
+            raise ValueError(f"file is larger than {MAX_READ_BYTES} bytes")
+        current = self._read_baseline(path)
+        old, new = args["old_text"], args["new_text"]
+        if not old:
+            raise ValueError("old_text is empty")
+        count = current.count(old)
+        if count == 0 and "\r\n" in current:  # the agent usually sends '\n'; the file may be CRLF
+            old, new = old.replace("\r\n", "\n").replace("\n", "\r\n"), new.replace("\r\n", "\n").replace("\n", "\r\n")
+            count = current.count(old)
+        if count != 1:
+            raise ValueError(f"old_text must match exactly once (found {count}); include more surrounding lines")
+        return current.replace(old, new, 1)
+
+    def _readable_files(self, start: Path):
+        """Workspace files under `start` that the receipt lets this task read. Never follows
+        links, never enters protected folders (.git, CI, agent config) or SKIP_DIRS."""
+        root = self.receipt.workspace_root
+        seen = 0
+        for dirpath, dirnames, filenames in os.walk(start, followlinks=False):
+            base = Path(dirpath)
+            rel_dir = "" if base == root else base.relative_to(root).as_posix()
+            dirnames[:] = sorted(d for d in dirnames if d not in SKIP_DIRS
+                                 and not self.gate._is_protected(f"{rel_dir}/{d}/x".lstrip("/"))
+                                 and not (base / d).is_symlink())
+            for name in sorted(filenames):
+                rel = f"{rel_dir}/{name}".lstrip("/")
+                seen += 1
+                if seen > MAX_SEARCH_FILES:
+                    return
+                if self.gate._check_path(rel, write=False, sink="FS_READ").allowed:
+                    yield rel, base / name
+
     def _execute(self, tool: str, args: Dict[str, Any], decision: GateDecision) -> str:
         if tool == "fetch_url":
             return self.http_open(args["url"])
+        if tool == "list_files":
+            files = [rel for rel, _ in self._readable_files(decision.resolved_path)]
+            more = f"\n... {len(files) - MAX_LIST_ENTRIES} more" if len(files) > MAX_LIST_ENTRIES else ""
+            return ("\n".join(files[:MAX_LIST_ENTRIES]) + more) if files else "no readable files here"
+        if tool == "search_code":
+            query, hits = args["query"], []
+            for rel, full in self._readable_files(self.receipt.workspace_root):
+                try:
+                    if full.stat().st_size > MAX_READ_BYTES or full.is_symlink():
+                        continue
+                    data = full.read_bytes()
+                except OSError:
+                    continue
+                if b"\x00" in data[:1024]:
+                    continue  # binary
+                for n, line in enumerate(data.decode("utf-8", errors="replace").splitlines(), 1):
+                    if query in line:
+                        hits.append(f"{rel}:{n}: {line.strip()[:200]}")
+                        if len(hits) >= MAX_SEARCH_MATCHES:
+                            return "\n".join(hits) + f"\n(stopped at {MAX_SEARCH_MATCHES} matches)"
+            return "\n".join(hits) if hits else "no matches in files this task may read"
         path = decision.resolved_path
         # Re-resolve right before use, in case a symlink appeared after the decision.
         # Residual race: on Windows there is no O_NOFOLLOW. With no shell tool the agent
@@ -537,13 +646,25 @@ class Gateway:
             fd = os.open(path, os.O_RDONLY | _OPEN_FLAGS)
             with os.fdopen(fd, "rb") as f:
                 return f.read(MAX_READ_BYTES).decode("utf-8", errors="replace")
-        if tool == "write_file":
+        if tool == "read_lines":
+            start, end = args["start_line"], args["end_line"]
+            if start < 1 or end < start or end - start + 1 > MAX_READ_LINES:
+                raise ValueError(f"need 1 <= start_line <= end_line and at most {MAX_READ_LINES} lines")
+            fd = os.open(path, os.O_RDONLY | _OPEN_FLAGS)
+            with os.fdopen(fd, "rb") as f:
+                lines = f.read(MAX_READ_BYTES).decode("utf-8", errors="replace").splitlines()
+            chunk = lines[start - 1:end]
+            body = "\n".join(f"{start + i}: {line}" for i, line in enumerate(chunk))
+            return f"{decision.target} lines {start}-{start + len(chunk) - 1} of {len(lines)}\n{body}"
+        if tool in WRITE_TOOLS:
             data = args["content"].encode("utf-8")
             if len(data) > MAX_WRITE_BYTES:
                 raise ValueError(f"content exceeds {MAX_WRITE_BYTES} bytes")
             fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC | _OPEN_FLAGS, 0o644)
             with os.fdopen(fd, "wb") as f:
                 f.write(data)
+            if tool == "edit_file":
+                return f"edited {decision.target}: replaced 1 occurrence ({len(data)} bytes now)"
             return f"wrote {len(data)} bytes to {decision.target}"
         raise AssertionError(f"no executor for {tool}")  # unreachable: gate denies unknown tools
 

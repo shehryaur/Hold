@@ -39,6 +39,7 @@ from hold.server import build_gateway
 
 REPO = Path(__file__).resolve().parent.parent
 PY = sys.executable
+HOLD_TOOLS = {"read_file", "write_file", "fetch_url", "list_files", "search_code", "read_lines", "edit_file"}
 SESSION_TIMEOUT = 60  # seconds for one whole client session, including startup and shutdown
 LINE_TIMEOUT = 30     # seconds to wait for any single raw JSON-RPC response
 
@@ -281,7 +282,7 @@ class StdioIntegrationTest(unittest.TestCase):
 
         # tools/list: exactly the three tools, with exact argument schemas.
         tools = {t.name: t for t in out["tools"]}
-        self.assertEqual(set(tools), {"read_file", "write_file", "fetch_url"})
+        self.assertEqual(set(tools), HOLD_TOOLS)
         self.assertEqual(set(tools["read_file"].inputSchema["properties"]), {"path"})
         self.assertEqual(set(tools["write_file"].inputSchema["properties"]), {"path", "content"})
         self.assertEqual(set(tools["fetch_url"].inputSchema["properties"]), {"url"})
@@ -395,7 +396,7 @@ class StdoutDisciplineTest(unittest.TestCase):
         self.assertEqual(len(server.stdout), 4)  # one line per response, nothing else
         self.assertEqual(responses[1]["result"]["serverInfo"]["name"], "hold")
         self.assertEqual({t["name"] for t in responses[2]["result"]["tools"]},
-                         {"read_file", "write_file", "fetch_url"})
+                         HOLD_TOOLS)
         self.assertFalse(responses[3]["result"]["isError"])
         self.assertTrue(responses[4]["result"]["isError"])
         self.assertIn("HOLD denied fetch_url", responses[4]["result"]["content"][0]["text"])

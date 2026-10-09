@@ -29,6 +29,8 @@ import os
 import re
 import sys
 import threading
+import urllib.error
+import urllib.request
 from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -51,6 +53,8 @@ DEFAULT_TASK = "hold-demo-001"
 DEFAULT_LIMIT = 50
 MAX_LIMIT = tch.MAX_EVENTS
 MAX_TASK_LEN = 200
+MAX_CHAT_BYTES = 12_000
+MAX_CHAT_MESSAGE = 1_000
 LOCAL_LABEL = "LOCAL AUDIT LOG (not ClickHouse)"
 HEALTH_SQL = "SELECT version() AS version, count() AS rows FROM hold_events"
 
@@ -299,6 +303,7 @@ class DashboardApp:
         self.index_path = index_path
         self.receipt_path = receipt_path
         self.live_path = live_path
+        self.guild = GuildChat(os.environ)
 
     def receipt(self) -> Tuple[int, Dict[str, Any]]:
         """The rendered Intent Receipt for the live view's 'what this task may do' chips:
@@ -345,11 +350,114 @@ class DashboardApp:
             payload["warning"] = warning
         return 200, payload
 
+    def chat(self, payload: Dict[str, Any]) -> Tuple[int, Dict[str, Any]]:
+        return self.guild.reply(payload)
+
+
+class GuildChat:
+    """Tiny dashboard proxy for an optional Guild-hosted explainer agent.
+
+    The browser never receives Guild credentials. If the endpoint is not configured, the
+    dashboard still answers with local product explanations so the guide stays useful.
+    """
+
+    BLOCKS = {
+        "receipt": "Task receipt lists what this task is allowed to read, edit, and contact.",
+        "allowed": "Allowed counts tool calls that matched the receipt and were permitted to run.",
+        "blocked": "Blocked counts calls HOLD stopped before they ran, including policy and code-scan blocks.",
+        "agent": "Agent shows who made the latest tool call and which tools have been used.",
+        "flow": "Live activity animates each tool call through HOLD's gate and shows the decision.",
+        "scans": "Code checks are Semgrep scans on permitted writes before the file is changed.",
+        "overview": "Decisions shows the latest allowed calls, permission blocks, and code blocks together.",
+        "history": "History lists the individual decisions, targets, and reasons for review.",
+    }
+
+    def __init__(self, environ: Mapping[str, str]):
+        self.endpoint = environ.get("GUILD_AI_ENDPOINT", "").strip()
+        self.api_key = environ.get("GUILD_AI_API_KEY", "").strip()
+        self.agent_id = environ.get("GUILD_AI_AGENT_ID", "").strip()
+        try:
+            self.timeout = max(1, min(60, int(environ.get("GUILD_AI_TIMEOUT", "15"))))
+        except ValueError:
+            self.timeout = 15
+
+    def reply(self, payload: Dict[str, Any]) -> Tuple[int, Dict[str, Any]]:
+        block = str(payload.get("block") or "overview")[:40]
+        message = str(payload.get("message") or "").strip()
+        if not message:
+            message = "Explain this block."
+        if len(message) > MAX_CHAT_MESSAGE:
+            return 400, {"error": f"message must be {MAX_CHAT_MESSAGE} characters or fewer"}
+        context = payload.get("context") if isinstance(payload.get("context"), dict) else {}
+        if self.endpoint:
+            return self._guild(block, message, context)
+        return 200, {"source": "local", "answer": self._local(block, message, context)}
+
+    def _guild(self, block: str, message: str, context: Dict[str, Any]) -> Tuple[int, Dict[str, Any]]:
+        body = {
+            "agent_id": self.agent_id,
+            "message": message,
+            "context": {
+                "product": "HOLD dashboard",
+                "block": block,
+                "block_hint": self.BLOCKS.get(block, self.BLOCKS["overview"]),
+                "dashboard": context,
+            },
+        }
+        data = json.dumps(body).encode("utf-8")
+        headers = {"Content-Type": "application/json", "Accept": "application/json"}
+        if self.api_key:
+            headers["Authorization"] = "Bearer " + self.api_key
+        request = urllib.request.Request(self.endpoint, data=data, headers=headers, method="POST")
+        try:
+            with urllib.request.urlopen(request, timeout=self.timeout) as response:
+                raw = response.read(200_000)
+        except urllib.error.HTTPError as exc:
+            detail = exc.read(1_000).decode("utf-8", errors="replace")
+            return exc.code, {"error": "Guild agent request failed", "detail": detail}
+        except (OSError, ValueError) as exc:
+            return 502, {"error": "Guild agent request failed", "detail": type(exc).__name__}
+        try:
+            parsed = json.loads(raw.decode("utf-8"))
+        except ValueError:
+            return 502, {"error": "Guild agent returned non-JSON"}
+        answer = self._extract_answer(parsed)
+        if not answer:
+            return 502, {"error": "Guild agent response did not include an answer"}
+        return 200, {"source": "guild", "answer": answer}
+
+    def _extract_answer(self, parsed: Any) -> str:
+        if isinstance(parsed, str):
+            return parsed
+        if not isinstance(parsed, dict):
+            return ""
+        for key in ("answer", "message", "text", "output", "content"):
+            value = parsed.get(key)
+            if isinstance(value, str) and value.strip():
+                return value.strip()
+        result = parsed.get("result")
+        if isinstance(result, dict):
+            return self._extract_answer(result)
+        return ""
+
+    def _local(self, block: str, message: str, context: Dict[str, Any]) -> str:
+        base = self.BLOCKS.get(block, self.BLOCKS["overview"])
+        if "network" in message.lower():
+            return base + " For this task, network access is shown in the receipt. If it says Blocked, HOLD stops outbound requests before dispatch."
+        if "semgrep" in message.lower() or "code" in message.lower():
+            return base + " For permitted writes, HOLD also runs the Semgrep check shown in Code checks."
+        if "why" in message.lower() or "blocked" in message.lower():
+            return base + " Open History to see the exact target and reason for each block."
+        task = context.get("task")
+        suffix = f" Current task: {task}." if isinstance(task, str) and task else ""
+        return base + suffix + " Ask about a specific count, path, host, or decision and I will explain it."
+
 
 class DashboardHandler(BaseHTTPRequestHandler):
     server_version = "hold-dashboard"
     sys_version = ""
     API_ROUTES = ("/api/events", "/api/summary", "/api/health", "/api/receipt")
+    POST_ROUTES = ("/api/chat",)
 
     def do_GET(self) -> None:  # noqa: N802 (http.server naming)
         app: DashboardApp = self.server.app  # type: ignore[attr-defined]
@@ -375,6 +483,38 @@ class DashboardHandler(BaseHTTPRequestHandler):
             self._send_json(400, {"error": "too many query parameters"})
             return
         self._send_json(*app.api(url.path, query))
+
+    def do_POST(self) -> None:  # noqa: N802 (http.server naming)
+        app: DashboardApp = self.server.app  # type: ignore[attr-defined]
+        port = self.server.server_address[1]
+        host = self.headers.get("Host", "").lower()
+        if host not in (f"127.0.0.1:{port}", f"localhost:{port}"):
+            self._send_json(403, {"error": f"unexpected Host header; open http://127.0.0.1:{port}/"})
+            return
+        url = urlsplit(self.path)
+        if url.path not in self.POST_ROUTES:
+            self._send_json(404, {"error": "not found"})
+            return
+        if self.headers.get("Content-Type", "").split(";", 1)[0].strip().lower() != "application/json":
+            self._send_json(415, {"error": "Content-Type must be application/json"})
+            return
+        try:
+            length = int(self.headers.get("Content-Length", "0"))
+        except ValueError:
+            self._send_json(400, {"error": "invalid Content-Length"})
+            return
+        if not 0 < length <= MAX_CHAT_BYTES:
+            self._send_json(413, {"error": f"chat request must be 1 to {MAX_CHAT_BYTES} bytes"})
+            return
+        try:
+            payload = json.loads(self.rfile.read(length).decode("utf-8"))
+        except ValueError:
+            self._send_json(400, {"error": "invalid JSON"})
+            return
+        if not isinstance(payload, dict):
+            self._send_json(400, {"error": "chat request must be an object"})
+            return
+        self._send_json(*app.chat(payload))
 
     def _headers(self, status: int, content_type: str, length: int, extra: Optional[Dict[str, str]] = None) -> None:
         self.send_response(status)
@@ -425,6 +565,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     args = parser.parse_args(argv)
 
     if args.jsonl:
+        load_env()
         source: Any = JsonlSource(args.jsonl)
     else:
         load_env()

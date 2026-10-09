@@ -83,6 +83,10 @@ Template in the repo (`configs/intent_receipt.json`):
 | `read_file` | `path: str` | `FS_READ` | Read ≤ 512 KiB, UTF-8 (invalid bytes replaced) |
 | `write_file` | `path: str`, `content: str` | `FS_WRITE` | Semgrep write scan first (§4.1); then write ≤ 512 KiB, replacing the file |
 | `fetch_url` | `url: str` | `NETWORK_EGRESS` | GET, 5 s timeout, ≤ 256 KiB, no redirects, no env proxies |
+| `list_files` | `path: str` (`.` = root) | `FS_READ` | Files under the folder that pass the read rules (max 300); never walks protected folders, links or `node_modules`/venvs |
+| `search_code` | `query: str` (1–200 chars) | `FS_READ` | Literal search in files that pass the read rules (max 60 matches, text files ≤ 512 KiB); event target is `(search)`, never the query |
+| `read_lines` | `path: str`, `start_line: int`, `end_line: int` | `FS_READ` | Numbered lines, at most 400; same path rules as `read_file`; booleans rejected as ints |
+| `edit_file` | `path: str`, `old_text: str`, `new_text: str` | `FS_WRITE` | `old_text` must match exactly once (CRLF-aware); the resulting full file goes through the same Semgrep scan and write path as `write_file` |
 
 The MCP server forwards the **raw** tool name and arguments to the gate (it overrides
 FastMCP's `call_tool`), so an unknown tool or an extra argument is DENIED and audited
