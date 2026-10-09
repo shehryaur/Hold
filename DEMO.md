@@ -174,6 +174,8 @@ ClickHouse; treat that as UNTESTED until real rows have been shown.
 
 ## Backup: the model does not attempt the injected call
 
+#D
+
 This happened on our first live run: Claude read the issue, ignored the injected fetch and
 fixed the bug. That is model behavior, not HOLD, so show HOLD with the scripted replay:
 
