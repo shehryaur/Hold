@@ -30,10 +30,10 @@ body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.4 "Segoe UI",sys
 button:focus-visible,summary:focus-visible{outline:2px solid #4263ba;outline-offset:4px}
 #blockHelp{position:fixed;z-index:40;max-width:min(290px,calc(100vw - 24px));padding:12px 15px;border-radius:12px;background:var(--ink);color:white;font-size:13px;line-height:1.5;box-shadow:0 8px 28px #1c202730;overflow-wrap:anywhere}
 [hidden]{display:none!important}
-.guide-pet{position:fixed;z-index:30;left:calc(100vw - 92px);top:calc(100vh - 92px);width:66px;height:66px;border:0;border-radius:50%;background:#ffffff;box-shadow:0 12px 34px rgba(28,36,52,.16),0 2px 8px rgba(28,36,52,.06);display:grid;place-items:center;cursor:pointer;transition:left .5s cubic-bezier(.2,.8,.2,1),top .5s cubic-bezier(.2,.8,.2,1),transform .25s,box-shadow .25s}
-.guide-pet:hover,.guide-pet[aria-expanded="true"]{transform:translateY(-3px);box-shadow:0 16px 42px rgba(35,128,82,.22),0 4px 12px rgba(28,36,52,.08)}
+.guide-pet{position:fixed;z-index:30;left:calc(100vw - 116px);top:calc(100vh - 116px);width:96px;height:96px;border:0;border-radius:0;background:transparent;box-shadow:none;display:grid;place-items:center;cursor:pointer;transition:left .5s cubic-bezier(.2,.8,.2,1),top .5s cubic-bezier(.2,.8,.2,1),transform .25s,box-shadow .25s}
+.guide-pet:hover,.guide-pet[aria-expanded="true"]{transform:translateY(-3px)}
 .puppet-stage{position:relative;display:grid;place-items:center;width:100%;height:100%}
-.puppet-svg{filter:drop-shadow(0 2px 4px rgba(28,36,52,.1));transition:transform .3s cubic-bezier(.34,1.56,.64,1);animation:puppetBob 3.2s ease-in-out infinite}
+.puppet-svg{width:84px;height:84px;filter:drop-shadow(0 2px 4px rgba(28,36,52,.1));transition:transform .3s cubic-bezier(.34,1.56,.64,1);animation:puppetBob 3.2s ease-in-out infinite}
 .guide-pet:hover .puppet-svg{transform:scale(1.1) rotate(-3deg);animation-play-state:paused}
 .guide-pet.bounce .puppet-svg{animation:puppetHop .55s cubic-bezier(.34,1.56,.64,1)}
 .puppet-eyes{transform-origin:27px 25px;animation:eyeBlink 4.2s ease-in-out infinite}
@@ -228,7 +228,7 @@ tr.bad td{background:#fff5f5}
   <div class="tablewrap" tabindex="0" role="region" aria-label="Decision history table"><table><thead><tr><th>Time (UTC)</th><th>Who</th><th>Tool</th><th>Target</th><th>Decision</th><th>Why</th></tr></thead><tbody id="rows"></tbody></table></div>
 </aside>
 
-<button class="guide-pet" id="guidePet" type="button" aria-label="Hold Copilot powered by Guild.ai" aria-expanded="false" aria-controls="guidePanel">
+<button class="guide-pet" id="guidePet" type="button" aria-label="Hold Copilot" aria-expanded="false" aria-controls="guidePanel">
   <div class="puppet-stage" aria-hidden="true">
     <svg class="puppet-svg" viewBox="0 0 54 54" width="50" height="50">
       <!-- Puppet ears with soft inner folds -->
@@ -279,7 +279,7 @@ tr.bad td{background:#fff5f5}
     <div class="guide-meta">
       <div class="guide-title-row">
         <span class="guide-title">Hold Copilot</span>
-        <span class="guild-badge">powered by <a href="https://guild.ai" target="_blank" rel="noopener">Guild.ai</a></span>
+        <span class="guild-badge" id="guideSource">built-in guide</span>
       </div>
       <div class="guide-block" id="guideBlock">Click any block to inspect</div>
     </div>
@@ -536,7 +536,7 @@ window.addEventListener("resize", hideHelp);
 document.addEventListener("scroll", hideHelp, true);
 
 const BLOCK_HELP = {
-  receipt: "👋 Hi! I'm Hold Copilot, powered by Guild.ai. This is the Task Receipt block—the developer-approved capability contract. It strictly defines what files this task may read, edit, or network hosts it may contact. Anything outside this receipt is blocked.",
+  receipt: "👋 Hi! I'm Hold Copilot. This is the Task Receipt block—the developer-approved capability contract. It strictly defines what files this task may read, edit, or network hosts it may contact. Anything outside this receipt is blocked.",
   allowed: "👋 Here in the Allowed block, you can see all tool calls that strictly matched the receipt policy and were dispatched. File writes also passed Semgrep AST code checks before modifying disk.",
   blocked: "👋 This is the Blocked block. It tallies all calls HOLD terminated before execution—preventing unauthorized file reads, path traversal, network exfiltration, and code injection.",
   agent: "👋 This is the Agent block. It tracks the AI agent (e.g. Claude Code) executing the task, its recent actions, and tool usage distribution.",
@@ -633,6 +633,7 @@ $("guideForm").addEventListener("submit", async (event) => {
   try {
     const response = await postJSON("/api/chat", { block: currentBlock, message, context: guideContext() });
     setText(pending, response.answer || "No answer returned.");
+    setText($("guideSource"), response.source === "nim" ? "Powered by Guild.ai" : "built-in guide (AI model not connected)");
   } catch (err) {
     setText(pending, "I could not reach the guide agent: " + err.message);
   }

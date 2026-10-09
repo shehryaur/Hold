@@ -376,10 +376,13 @@ class GuildChat:
         self.endpoint = environ.get("GUILD_AI_ENDPOINT", "").strip()
         self.api_key = environ.get("GUILD_AI_API_KEY", "").strip()
         self.agent_id = environ.get("GUILD_AI_AGENT_ID", "").strip()
+        self.nim_key = environ.get("NIM_API_KEY", "").strip()
+        self.nim_model = environ.get("NIM_MODEL", "").strip()
+        self.nim_base = environ.get("NIM_BASE_URL", "https://integrate.api.nvidia.com/v1").strip().rstrip("/")
         try:
-            self.timeout = max(1, min(60, int(environ.get("GUILD_AI_TIMEOUT", "15"))))
+            self.timeout = max(5, min(60, int(environ.get("GUILD_AI_TIMEOUT", "30"))))
         except ValueError:
-            self.timeout = 15
+            self.timeout = 30
 
     def reply(self, payload: Dict[str, Any]) -> Tuple[int, Dict[str, Any]]:
         block = str(payload.get("block") or "overview")[:40]
@@ -389,12 +392,46 @@ class GuildChat:
         if len(message) > MAX_CHAT_MESSAGE:
             return 400, {"error": f"message must be {MAX_CHAT_MESSAGE} characters or fewer"}
         context = payload.get("context") if isinstance(payload.get("context"), dict) else {}
-        if self.endpoint:
-            return self._guild(block, message, context)
+        if self.nim_key and self.nim_model:
+            status, res = self._nim(block, message, context)
+            if status == 200:
+                return 200, res
+        # Not configured or the model call failed: built-in text, labeled as such.
         return 200, {"source": "local", "answer": self._local(block, message, context)}
+
+    def _nim(self, block: str, message: str, context: Dict[str, Any]) -> Tuple[int, Dict[str, Any]]:
+        """NVIDIA NIM (OpenAI-compatible chat completions). The key never leaves the server."""
+        body = {"model": self.nim_model, "max_tokens": 220, "temperature": 0.2, "messages": [
+            {"role": "system", "content": "You explain the HOLD security dashboard to non-experts in 2-3 plain "
+             "sentences. Use only the dashboard data given. Never invent numbers."},
+            {"role": "user", "content": f"Dashboard block: {block} ({self.BLOCKS.get(block, self.BLOCKS['overview'])}). "
+             f"Dashboard data: {json.dumps(context)[:4000]}. Question: {message}"}]}
+        req = urllib.request.Request(self.nim_base + "/chat/completions", data=json.dumps(body).encode("utf-8"),
+                                     headers={"Authorization": "Bearer " + self.nim_key, "Content-Type": "application/json"},
+                                     method="POST")
+        try:
+            with urllib.request.urlopen(req, timeout=self.timeout) as response:
+                parsed = json.loads(response.read(200_000).decode("utf-8"))
+            answer = str(parsed["choices"][0]["message"]["content"]).strip()
+        except Exception as exc:  # never echo upstream bodies: they could contain account details
+            return 502, {"error": "model call failed", "detail": type(exc).__name__}
+        if not answer:
+            return 502, {"error": "model returned no answer"}
+        return 200, {"source": "nim", "model": self.nim_model, "answer": answer[:2000]}
 
     def _guild(self, block: str, message: str, context: Dict[str, Any]) -> Tuple[int, Dict[str, Any]]:
         body = {
+            "session_type": "api_trigger",
+            "agent_input": {
+                "text": message,
+                "message": message,
+                "context": {
+                    "product": "HOLD dashboard",
+                    "block": block,
+                    "block_hint": self.BLOCKS.get(block, self.BLOCKS["overview"]),
+                    "dashboard": context,
+                },
+            },
             "agent_id": self.agent_id,
             "message": message,
             "context": {
@@ -407,7 +444,11 @@ class GuildChat:
         data = json.dumps(body).encode("utf-8")
         headers = {"Content-Type": "application/json", "Accept": "application/json"}
         if self.api_key:
-            headers["Authorization"] = "Bearer " + self.api_key
+            if ":" in self.api_key:
+                encoded = base64.b64encode(self.api_key.encode("utf-8")).decode("ascii")
+                headers["Authorization"] = "Basic " + encoded
+            else:
+                headers["Authorization"] = "Bearer " + self.api_key
         request = urllib.request.Request(self.endpoint, data=data, headers=headers, method="POST")
         try:
             with urllib.request.urlopen(request, timeout=self.timeout) as response:
@@ -431,13 +472,16 @@ class GuildChat:
             return parsed
         if not isinstance(parsed, dict):
             return ""
-        for key in ("answer", "message", "text", "output", "content"):
+        for key in ("answer", "message", "text", "output", "content", "agent_output", "response"):
             value = parsed.get(key)
             if isinstance(value, str) and value.strip():
                 return value.strip()
-        result = parsed.get("result")
-        if isinstance(result, dict):
-            return self._extract_answer(result)
+        for sub in ("result", "session", "agent_input", "output"):
+            sub_val = parsed.get(sub)
+            if isinstance(sub_val, dict):
+                ans = self._extract_answer(sub_val)
+                if ans:
+                    return ans
         return ""
 
     def _local(self, block: str, message: str, context: Dict[str, Any]) -> str:
