@@ -51,11 +51,14 @@ START_TIMEOUT = 30
 
 
 def _env(**overrides):
-    """Process env with every CLICKHOUSE_* set explicitly, so load_env cannot add real ones."""
-    env = {k: v for k, v in os.environ.items() if not k.startswith("CLICKHOUSE_")}
+    """Process env with every CLICKHOUSE_* and chat backend variable set explicitly, so load_env
+    cannot add real ones from .env."""
+    env = {k: v for k, v in os.environ.items() if not k.startswith(("CLICKHOUSE_", "NIM_", "GUILD_AI_"))}
     for name in ("HOST", "PORT", "SECURE", "DATABASE", "USER", "PASSWORD", "READER_USER", "READER_PASSWORD",
                  "ADMIN_USER", "ADMIN_PASSWORD"):
         env[f"CLICKHOUSE_{name}"] = ""
+    for name in ("NIM_API_KEY", "NIM_MODEL", "GUILD_AI_ENDPOINT", "GUILD_AI_API_KEY", "GUILD_AI_AGENT_ID"):
+        env[name] = ""
     env.update(overrides)
     env["PYTHONIOENCODING"] = "utf-8"
     env["PYTHONUNBUFFERED"] = "1"

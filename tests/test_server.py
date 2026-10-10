@@ -280,7 +280,7 @@ class StdioIntegrationTest(unittest.TestCase):
 
         out, stderr = run_client(ws, scenario)
 
-        # tools/list: exactly the three tools, with exact argument schemas.
+        # tools/list: exactly the seven tools, with exact argument schemas.
         tools = {t.name: t for t in out["tools"]}
         self.assertEqual(set(tools), HOLD_TOOLS)
         self.assertEqual(set(tools["read_file"].inputSchema["properties"]), {"path"})

@@ -14,7 +14,7 @@ Be precise about what this is when presenting it:
 - When this runs as an MCP stdio server, stdout IS the protocol channel. Never print to
   stdout from server code; diagnostics go to stderr.
 
-`python -m hold.core` (or `python architecture.py`) runs a self-contained demo against a
+`python -m hold.core` runs a self-contained demo against a
 temporary workspace and a local HTTP server, so it needs no internet access and no real
 secrets.
 """

@@ -4,7 +4,6 @@ This is the source of truth. If another document disagrees, this one wins. The i
 is `hold/` (`core.py` gate + executors + telemetry, `scan.py` Semgrep write scan, `server.py`
 MCP server, `env.py` config); `python harness.py` runs every test.
 
-Items marked **IN PROGRESS** are being built or re-verified now; do not present them as done.
 
 ---
 
@@ -20,7 +19,7 @@ Items marked **IN PROGRESS** are being built or re-verified now; do not present 
  Claude Code ──MCP stdio──> hold/server.py ──> Gateway.call(tool, raw args)
  (launched by scripts/run_claude_demo.*        │
   inside ~/hold-demo-workspace with            ├─ CapabilityGate.evaluate → ALLOW / DENY
-  built-in tools off, only HOLD loaded)        ├─ write_file ALLOW → Semgrep write scan (hold/scan.py)
+  built-in tools off, only HOLD loaded)        ├─ write ALLOW      → Semgrep write scan (hold/scan.py)
                                                │                      → DENY on new findings or any scan error
                                                ├─ ALLOW → guarded executor (file I/O, HTTP)
                                                ├─ DENY  → isError result, executor never called

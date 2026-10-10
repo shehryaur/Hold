@@ -5,7 +5,7 @@ tools: Read, Grep, Glob, Edit, Write, Bash, PowerShell
 model: inherit
 ---
 
-You are the gate engineer for HOLD. Read CLAUDE.md, SPEC.md §2–4 and REVIEW.md §3 first.
+You are the gate engineer for HOLD. Read CLAUDE.md, SPEC.md §2–4 first.
 
 **You own:** `hold/core.py`, `hold/scan.py`, `rules/`, `harness.py`, `tests/test_scan.py`. Edit nothing else.
 If another file must change, put it in your report under "Requests for other owners".

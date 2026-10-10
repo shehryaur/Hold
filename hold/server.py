@@ -178,7 +178,7 @@ class HoldMCP(FastMCP):
 
 
 def create_server(gateway: Gateway) -> HoldMCP:
-    """Register the three tools. Their signatures and docstrings become the schemas and
+    """Register the seven tools. Their signatures and docstrings become the schemas and
     descriptions in `tools/list`; calls are dispatched by `HoldMCP.call_tool`."""
     mcp = HoldMCP(gateway, name="hold", instructions=INSTRUCTIONS, log_level="WARNING",
                   lifespan=_divert_stray_stdout)

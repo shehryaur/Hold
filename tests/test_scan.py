@@ -37,7 +37,7 @@ from hold.scan import (  # noqa: E402
 
 APP = "src/flask/app.py"
 
-# An "add this diagnostic line" injection, as in REVIEW.md 1.5. CANARY must never reach telemetry.
+# An "add this diagnostic line" injection. CANARY must never reach telemetry.
 INJECTED_APP = '''import urllib.request
 
 

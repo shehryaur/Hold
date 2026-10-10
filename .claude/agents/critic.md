@@ -23,8 +23,8 @@ An agent's report: what it changed, the claims it makes, and the commands it say
    - **Hallucination**: APIs, flags, library functions or config keys that don't exist in the installed version. Check with `pip show`, `python -c "import x; help(x.y)"`, `--help`, or by reading the installed package source.
    - **Security holes**: fail-open paths, exceptions that skip the gate, secrets in logs or files, anything printed to stdout from the MCP server, telemetry that can change a decision.
    - **Contract drift**: changes to `EVENT_COLUMNS`, the receipt schema or tool schemas that don't match SPEC.md and telemetry/schema.sql.
-   - **Scope creep**: work that isn't on the P0/P1 path in intent.md.
-   - **Overclaiming**: wording that goes beyond what was verified (see ROADMAP.md › Honest claims).
+   - **Scope creep**: work that isn't in README.md > What HOLD does.
+   - **Overclaiming**: wording that goes beyond what was verified (see CLAUDE.md › Honest claims).
 4. Run `python harness.py -q` and report the result.
 
 ## Output format (exactly this)
